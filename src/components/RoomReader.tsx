@@ -37,18 +37,50 @@ function chunkParagraphs(paras: string[], minParas = 3, maxParas = 5) {
   return { chunks: chunks.length ? chunks : [fallback], chunkStarts: chunkStarts.length ? chunkStarts : [0] };
 }
 
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderWithHighlight(text: string, highlight: string) {
+  const needle = (highlight || "").replace(/\s+/g, " ").trim();
+  if (!needle) return text;
+
+  const pattern = needle
+    .split(" ")
+    .filter(Boolean)
+    .map(escapeRegExp)
+    .join("\\s+");
+
+  const re = new RegExp(`(${pattern})`, "gi");
+  const bits = text.split(re);
+  if (bits.length <= 1) return text;
+
+  let k = 0;
+  return bits.map((part, idx) =>
+    idx % 2 === 1 ? (
+      <mark key={`hl-${k++}`} style={{ background: "rgba(250,204,21,0.45)", color: "inherit", padding: "0 2px", borderRadius: 4 }}>
+        {part}
+      </mark>
+    ) : (
+      part
+    )
+  );
+}
+
 export function RoomReader({
   bookId,
   chunkIndex,
   onChunkChange,
   isHost,
   textUrl,
+  highlightText,
 }: {
   bookId: number;
   chunkIndex: number;
   onChunkChange: (next: number) => void;
   isHost: boolean;
   textUrl?: string;
+  highlightText?: string;
 }) {
   const [raw, setRaw] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -189,7 +221,9 @@ export function RoomReader({
         </div>
       </div>
 
-      <article style={{ fontSize, lineHeight, whiteSpace: "pre-wrap" }}>{chunks[clamped] ?? ""}</article>
+      <article style={{ fontSize, lineHeight, whiteSpace: "pre-wrap" }}>
+        {renderWithHighlight(chunks[clamped] ?? "", highlightText ?? "")}
+      </article>
 
       {tocOpen ? (
         <>
