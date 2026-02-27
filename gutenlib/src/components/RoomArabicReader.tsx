@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type HtmlResponse = { data?: string; error?: string };
 
@@ -29,16 +29,101 @@ function flatten(items: TocItem[], level = 0): FlatToc {
   return out;
 }
 
+function normalizeText(s: string) {
+  return (s || "").replace(/\s+/g, " ").trim();
+}
+
+function applyHighlightToContainer(container: HTMLElement, highlight: string) {
+  // Clear previous highlights
+  container.querySelectorAll("mark[data-host-highlight='1']").forEach((m) => {
+    const parent = m.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(m.textContent || ""), m);
+    parent.normalize();
+  });
+
+  const full = normalizeText(highlight);
+  if (!full) return;
+
+  const candidates = Array.from(new Set([
+    full,
+    full.slice(0, 180).trim(),
+    full.slice(0, 120).trim(),
+    full.split(/[\.!؟\n]/)[0]?.trim() || "",
+  ].filter(Boolean)));
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  while (walker.nextNode()) {
+    const n = walker.currentNode as Text;
+    if ((n.nodeValue || "").trim()) textNodes.push(n);
+  }
+
+  for (const node of textNodes) {
+    const original = node.nodeValue || "";
+    const normalized = normalizeText(original);
+    if (!normalized) continue;
+
+    let picked = "";
+    for (const c of candidates) {
+      if (normalizeText(normalized).includes(normalizeText(c))) {
+        picked = c;
+        break;
+      }
+    }
+    if (!picked) continue;
+
+    // try exact in original first, else normalized fallback
+    let i = original.indexOf(picked);
+    let len = picked.length;
+
+    if (i < 0) {
+      const simpleNeedle = normalizeText(picked);
+      const simpleOriginal = normalizeText(original);
+      const j = simpleOriginal.indexOf(simpleNeedle);
+      if (j < 0) continue;
+
+      // approximate mapping to original text by taking the first 70 chars token sequence
+      const token = simpleNeedle.slice(0, Math.min(70, simpleNeedle.length)).trim();
+      i = original.indexOf(token);
+      len = token.length;
+      if (i < 0) continue;
+    }
+
+    const before = original.slice(0, i);
+    const match = original.slice(i, i + len);
+    const after = original.slice(i + len);
+
+    const mark = document.createElement("mark");
+    mark.setAttribute("data-host-highlight", "1");
+    mark.style.background = "rgba(250,204,21,0.45)";
+    mark.style.color = "inherit";
+    mark.style.padding = "0 2px";
+    mark.style.borderRadius = "4px";
+    mark.textContent = match;
+
+    const frag = document.createDocumentFragment();
+    if (before) frag.appendChild(document.createTextNode(before));
+    frag.appendChild(mark);
+    if (after) frag.appendChild(document.createTextNode(after));
+
+    node.parentNode?.replaceChild(frag, node);
+    return;
+  }
+}
+
 export function RoomArabicReader({
   bookId,
   page,
   onPageChange,
   isHost,
+  highlightText,
 }: {
   bookId: string;
   page: number;
   onPageChange: (nextPage: number) => void;
   isHost: boolean;
+  highlightText?: string;
 }) {
   const [toc, setToc] = useState<TocItem[]>([]);
   const [pagesCount, setPagesCount] = useState<number>(0);
@@ -47,6 +132,7 @@ export function RoomArabicReader({
   const [loadingPage, setLoadingPage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const articleRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +191,12 @@ export function RoomArabicReader({
     };
   }, [bookId, page]);
 
+  useEffect(() => {
+    const el = articleRef.current;
+    if (!el) return;
+    applyHighlightToContainer(el, highlightText || "");
+  }, [html, highlightText]);
+
   if (loading) return <div style={{ opacity: 0.75 }}>جاري تحميل بيانات الكتاب…</div>;
   if (error) return <div style={{ color: "#fca5a5" }}>خطأ: {error}</div>;
 
@@ -151,6 +243,7 @@ export function RoomArabicReader({
       </div>
 
       <div
+        ref={articleRef}
         style={{
           border: "1px solid #232323",
           background: "#0b0b0b",

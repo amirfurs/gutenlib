@@ -1,5 +1,5 @@
 export const VOICE_SERVER_URL =
-  process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? "http://localhost:3001";
+  (process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? "http://localhost:3001").trim().replace(/\/+$/, "");
 
 /**
  * ICE servers (STUN/TURN)
@@ -22,7 +22,20 @@ export const ICE_SERVERS: RTCIceServer[] = (() => {
   const raw = process.env.NEXT_PUBLIC_ICE_SERVERS;
   if (raw && raw.trim()) {
     try {
-      const parsed = JSON.parse(raw);
+      let text = raw.trim();
+      // Normalize accidental CRLF tails and quote-wrapped JSON from dashboard/CLI.
+      text = text.replace(/\r?\n/g, "").trim();
+
+      let parsed: unknown = JSON.parse(text);
+
+      // Some setups store JSON as a quoted string, e.g. "[{\"urls\":...}]"
+      if (typeof parsed === "string") {
+        const nested = parsed.trim();
+        if (nested.startsWith("[") || nested.startsWith("{")) {
+          parsed = JSON.parse(nested);
+        }
+      }
+
       if (Array.isArray(parsed)) return parsed as RTCIceServer[];
     } catch {
       // fall through
