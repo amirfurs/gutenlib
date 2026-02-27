@@ -70,6 +70,9 @@ function makeRoom() {
     reading: { kind: "chunk", index: 0 },
     messages: [], // { id, peerId, name, text, ts }
     participants: new Map(), // peerId -> { peerId, displayName, role }
+    maxParticipants: 0,
+    highlight: null, // { text, by, ts }
+    readingTrail: { kind: "chunk", seen: [0] },
   };
   rooms.set(inviteToken, room);
   return room;
@@ -83,6 +86,21 @@ function cleanupRoomIfNeeded(room) {
   if (connectedCount === 0 || expired) {
     rooms.delete(room.inviteToken);
   }
+}
+
+function buildRoomSummary(room) {
+  const durationMs = Math.max(0, now() - room.createdAt);
+  return {
+    durationMin: Math.round(durationMs / 60000),
+    participantsPeak: room.maxParticipants || room.participants.size,
+    activeBook: room.activeBook,
+    reading: {
+      kind: room.readingTrail?.kind || room.reading?.kind || "chunk",
+      seen: Array.isArray(room.readingTrail?.seen) ? room.readingTrail.seen.slice(0, 500) : [],
+      last: room.reading,
+    },
+    endedAt: now(),
+  };
 }
 
 const server = http.createServer((req, res) => {
@@ -220,6 +238,7 @@ io.on("connection", (socket) => {
     if (prev?.disconnectTimer) clearTimeout(prev.disconnectTimer);
 
     room.participants.set(peerId, participant);
+    room.maxParticipants = Math.max(room.maxParticipants || 0, room.participants.size);
 
     socket.data.inviteToken = inviteToken;
     socket.data.peerId = peerId;
@@ -240,6 +259,7 @@ io.on("connection", (socket) => {
       roomName: room.roomName,
       activeBook: room.activeBook,
       reading: room.reading,
+      highlight: room.highlight,
       peers,
       expiresAt: room.expiresAt,
     });
@@ -388,8 +408,11 @@ io.on("connection", (socket) => {
 
     room.activeBook = { source, id, title, author, coverUrl, lang };
     room.reading = source === "abl" ? { kind: "page", index: 1 } : { kind: "chunk", index: 0 };
+    room.readingTrail = { kind: room.reading.kind, seen: [room.reading.index] };
+    room.highlight = null;
     io.to(inviteToken).emit("book-updated", { activeBook: room.activeBook });
     io.to(inviteToken).emit("reading-updated", { reading: room.reading });
+    io.to(inviteToken).emit("highlight-updated", { highlight: null });
   });
 
   socket.on("host-clear-book", ({ hostSecret }) => {
@@ -407,8 +430,11 @@ io.on("connection", (socket) => {
 
     room.activeBook = null;
     room.reading = { kind: "chunk", index: 0 };
+    room.readingTrail = { kind: "chunk", seen: [0] };
+    room.highlight = null;
     io.to(inviteToken).emit("book-updated", { activeBook: null });
     io.to(inviteToken).emit("reading-updated", { reading: room.reading });
+    io.to(inviteToken).emit("highlight-updated", { highlight: null });
   });
 
   socket.on("host-set-chunk", ({ hostSecret, chunkIndex }) => {
@@ -431,6 +457,8 @@ io.on("connection", (socket) => {
     }
 
     room.reading = { kind: "chunk", index: Math.floor(idx) };
+    if (room.readingTrail?.kind !== "chunk") room.readingTrail = { kind: "chunk", seen: [] };
+    if (!room.readingTrail.seen.includes(room.reading.index)) room.readingTrail.seen.push(room.reading.index);
     io.to(inviteToken).emit("reading-updated", { reading: room.reading });
   });
 
@@ -454,7 +482,44 @@ io.on("connection", (socket) => {
     }
 
     room.reading = { kind: "page", index: Math.floor(idx) };
+    if (room.readingTrail?.kind !== "page") room.readingTrail = { kind: "page", seen: [] };
+    if (!room.readingTrail.seen.includes(room.reading.index)) room.readingTrail.seen.push(room.reading.index);
     io.to(inviteToken).emit("reading-updated", { reading: room.reading });
+  });
+
+  socket.on("host-set-highlight", ({ hostSecret, text }) => {
+    const inviteToken = socket.data.inviteToken;
+    const peerId = socket.data.peerId;
+    if (!inviteToken) return;
+
+    const room = rooms.get(inviteToken);
+    if (!room) return;
+
+    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+      socket.emit("control-error", { error: "NOT_AUTHORIZED" });
+      return;
+    }
+
+    const t = String(text ?? "").trim().slice(0, 1200);
+    room.highlight = t ? { text: t, by: peerId, ts: now() } : null;
+    io.to(inviteToken).emit("highlight-updated", { highlight: room.highlight });
+  });
+
+  socket.on("host-clear-highlight", ({ hostSecret }) => {
+    const inviteToken = socket.data.inviteToken;
+    const peerId = socket.data.peerId;
+    if (!inviteToken) return;
+
+    const room = rooms.get(inviteToken);
+    if (!room) return;
+
+    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+      socket.emit("control-error", { error: "NOT_AUTHORIZED" });
+      return;
+    }
+
+    room.highlight = null;
+    io.to(inviteToken).emit("highlight-updated", { highlight: null });
   });
 
   // Host controls
@@ -543,7 +608,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(inviteToken).emit("room-ended", { reason: "HOST_ENDED" });
+    io.to(inviteToken).emit("room-ended", { reason: "HOST_ENDED", summary: buildRoomSummary(room) });
     rooms.delete(inviteToken);
   });
 
@@ -571,7 +636,7 @@ io.on("connection", (socket) => {
         if (!stillThere) return;
         const host = stillThere.hostPeerId && stillThere.participants.get(stillThere.hostPeerId);
         if (!host || !host.socketId) {
-          io.to(inviteToken).emit("room-ended", { reason: "HOST_LEFT" });
+          io.to(inviteToken).emit("room-ended", { reason: "HOST_LEFT", summary: buildRoomSummary(stillThere) });
           rooms.delete(inviteToken);
         }
       }, 60_000);
