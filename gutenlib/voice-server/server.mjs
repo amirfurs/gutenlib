@@ -10,7 +10,7 @@ try {
   // ignore
 }
 
-const PORT = Number(process.env.VOICE_PORT || 3001);
+const PORT = Number(process.env.PORT || process.env.VOICE_PORT || 3001);
 // Allowed web origins.
 // - VOICE_ORIGIN: single origin (back-compat)
 // - VOICE_ORIGINS: comma-separated list (preferred)
