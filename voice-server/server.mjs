@@ -20,13 +20,28 @@ const ORIGINS = (process.env.VOICE_ORIGINS || ORIGIN)
   .map((s) => s.trim())
   .filter(Boolean);
 
+function isAllowedOrigin(reqOrigin) {
+  if (!reqOrigin) return true;
+  if (ORIGINS.includes(reqOrigin)) return true;
+
+  // Allow Vercel production/preview links for this app family.
+  try {
+    const u = new URL(reqOrigin);
+    const h = u.hostname.toLowerCase();
+    if (h.endsWith(".vercel.app") && h.includes("gutenlib")) return true;
+  } catch {
+    // ignore parse errors
+  }
+
+  return false;
+}
+
 /**
- * Return the matching allowed origin for CORS, or the primary ORIGIN as fallback.
- * This makes REST endpoints consistent with Socket.IO multi-origin support.
+ * Return the allowed origin for CORS, or the primary ORIGIN as fallback.
  */
 function getAllowOrigin(reqOrigin) {
   if (!reqOrigin) return ORIGIN;
-  return ORIGINS.includes(reqOrigin) ? reqOrigin : ORIGIN;
+  return isAllowedOrigin(reqOrigin) ? reqOrigin : ORIGIN;
 }
 
 /**
@@ -146,7 +161,7 @@ const server = http.createServer((req, res) => {
 
 const io = new Server(server, {
   cors: {
-    origin: ORIGINS,
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     methods: ["GET", "POST"],
   },
 });
