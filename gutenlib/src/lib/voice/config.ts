@@ -1,0 +1,39 @@
+export const VOICE_SERVER_URL =
+  process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? "http://localhost:3001";
+
+/**
+ * ICE servers (STUN/TURN)
+ *
+ * For production (cross-internet connections), you MUST add a TURN server.
+ * Without TURN, peers behind symmetric NAT cannot connect.
+ *
+ * Set NEXT_PUBLIC_ICE_SERVERS as a JSON array, e.g.:
+ * NEXT_PUBLIC_ICE_SERVERS='[
+ *   {"urls":"stun:stun.l.google.com:19302"},
+ *   {"urls":"turn:YOUR_TURN_HOST:3478","username":"YOUR_USER","credential":"YOUR_PASS"}
+ * ]'
+ *
+ * Free TURN options:
+ *  - https://www.metered.ca/tools/openrelay/  (open relay, no account needed for testing)
+ *  - Twilio TURN (free tier)
+ *  - Self-host coturn (free, open source)
+ */
+export const ICE_SERVERS: RTCIceServer[] = (() => {
+  const raw = process.env.NEXT_PUBLIC_ICE_SERVERS;
+  if (raw && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as RTCIceServer[];
+    } catch {
+      // fall through
+    }
+  }
+
+  // Default: multiple STUN servers for better hole-punching.
+  // Works on most home/office networks; TURN is needed for strict NAT.
+  return [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" },
+  ];
+})();
