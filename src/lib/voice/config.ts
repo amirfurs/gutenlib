@@ -42,11 +42,14 @@ export const ICE_SERVERS: RTCIceServer[] = (() => {
     }
   }
 
-  // Default: multiple STUN servers for better hole-punching.
-  // Works on most home/office networks; TURN is needed for strict NAT.
+  // Safe fallback: include TURN too (not only STUN), so calls still work
+  // even if NEXT_PUBLIC_ICE_SERVERS is malformed in env.
   return [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turns:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
   ];
 })();
