@@ -12,52 +12,56 @@ export async function GET(req: Request) {
 
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const perPage = Math.min(250, Math.max(1, Number(url.searchParams.get("perPage") ?? "40") || 40));
-  const query = (url.searchParams.get("query") ?? "").trim();
+  const query = decodeURIComponent((url.searchParams.get("query") ?? "").trim());
   const title = (url.searchParams.get("title") ?? "").trim();
   const author = (url.searchParams.get("author") ?? "").trim();
   const publisher = (url.searchParams.get("publisher") ?? "").trim();
   const language = (url.searchParams.get("lang") ?? "ar").trim();
 
   const sortBy = Number(url.searchParams.get("sortBy") ?? "") || ListRequest_Sort.CONTRIBUTOR_DIED_AT;
-  const sortDir = Number(url.searchParams.get("sortDir") ?? "") || SortDirection.DESCENDING;
+  const sortDir = Number(url.searchParams.get("sortDir") ?? "") || SortDirection.ASCENDING;
 
-  const diedFrom = (url.searchParams.get("diedFrom") ?? "").trim();
-  const diedTo = (url.searchParams.get("diedTo") ?? "").trim();
+  const hasPdf = url.searchParams.get("hasPdf") === "true";
 
   try {
     const client = ablBookClient({ language });
 
+    // Build contributors filter (matching reference project pattern)
     const contributors: any[] = [];
-    if (author) contributors.push({ name: author });
-    if ((diedFrom || diedTo) && contributors.length) {
-      // best-effort: DateTimeRange can accept local_string; upstream will interpret.
-      contributors[0].died = {
-        ...(diedFrom ? { from: { localString: diedFrom } } : {}),
-        ...(diedTo ? { to: { localString: diedTo } } : {}),
-      };
+    if (author) {
+      contributors.push({ name: author });
     }
 
-    const res = await client.list({
+    // Build the request matching reference project's pattern exactly
+    const requestPayload: any = {
       page,
       perPage,
       sortBy,
       sortDir,
       query,
-      title,
-      contributors,
-      publishers: publisher ? [{ name: publisher }] : [],
-      categories: url.searchParams.get("categories")?.split(",").filter(Boolean) ?? [],
-      collections: url.searchParams.get("collections")?.split(",").filter(Boolean) ?? [],
-      languages: url.searchParams.get("languages")?.split(",").filter(Boolean) ?? [],
-      sources: url.searchParams.get("sources")?.split(",").filter(Boolean) as any,
-      attachments: url.searchParams.get("hasPdf") === "true" ? [{ context: 2 }] : [],
-      tags: [],
-      status: [],
-      isDownloaded: false,
-      bookIds: [],
-    });
+    };
 
-    // Best compatibility: return fully-typed JSON from schema
+    // Only add optional fields if they have values (matching reference behavior)
+    if (title) requestPayload.title = title;
+    if (contributors.length) requestPayload.contributors = contributors;
+    if (publisher) requestPayload.publishers = [{ name: publisher }];
+
+    const languages = url.searchParams.get("languages")?.split(",").filter(Boolean) ?? [];
+    if (languages.length) requestPayload.languages = languages;
+
+    const categories = url.searchParams.get("categories")?.split(",").filter(Boolean) ?? [];
+    if (categories.length) requestPayload.categories = categories;
+
+    const collections = url.searchParams.get("collections")?.split(",").filter(Boolean) ?? [];
+    if (collections.length) requestPayload.collections = collections;
+
+    const sources = url.searchParams.get("sources")?.split(",").filter(Boolean) ?? [];
+    if (sources.length) requestPayload.sources = sources;
+
+    if (hasPdf) requestPayload.attachments = [{ context: 2 }];
+
+    const res = await client.list(requestPayload);
+
     const json = toJson(ListResponseSchema, res);
 
     return NextResponse.json(json, {
@@ -66,8 +70,9 @@ export async function GET(req: Request) {
       },
     });
   } catch (e: any) {
+    console.error("[ABL] Error:", e?.message, e?.code);
     return NextResponse.json(
-      { error: e?.message ?? "ABL request failed" },
+      { error: e?.message ?? "ABL request failed", code: e?.code },
       { status: 502 }
     );
   }

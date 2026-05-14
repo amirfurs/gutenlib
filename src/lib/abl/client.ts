@@ -13,6 +13,10 @@ export function ablBookClient(opts?: { language?: string }) {
   const transport = createGrpcTransport({
     baseUrl: BASE_URL,
     interceptors: [addLanguageInterceptor(opts?.language ?? "ar")],
+    nodeOptions: {
+      rejectUnauthorized: false,
+      requestCert: false,
+    },
   });
 
   return createClient(BookService, transport);

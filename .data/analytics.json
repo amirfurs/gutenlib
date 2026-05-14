@@ -1,17 +1,35 @@
 {
   "version": 1,
   "activeSessions": {
-    "e9d92b72-b9e4-404e-a843-b8c2811f22d6": {
-      "sid": "e9d92b72-b9e4-404e-a843-b8c2811f22d6",
-      "vid": "53eb8be7-90c4-491b-ae75-ed26bb6793c0",
-      "lastSeen": 1778750144511,
-      "firstSeen": 1778750144511
+    "25327d4e-7d19-4a3b-8ee3-978157647762": {
+      "sid": "25327d4e-7d19-4a3b-8ee3-978157647762",
+      "vid": "0a468887-aa58-4e68-b7a1-ac5ad08580df",
+      "lastSeen": 1778751290897,
+      "firstSeen": 1778751185696
     },
-    "83a52049-e716-4cef-a4ad-85a3b5d0c783": {
-      "sid": "83a52049-e716-4cef-a4ad-85a3b5d0c783",
-      "vid": "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f",
-      "lastSeen": 1778750160994,
-      "firstSeen": 1778750160994
+    "ead5e829-25ea-41f0-9b82-d39431792876": {
+      "sid": "ead5e829-25ea-41f0-9b82-d39431792876",
+      "vid": "8c791d0d-e386-4014-9275-0fd78bd3c853",
+      "lastSeen": 1778751317715,
+      "firstSeen": 1778751317715
+    },
+    "e84b1fbd-7105-458a-8bd8-712fba630e84": {
+      "sid": "e84b1fbd-7105-458a-8bd8-712fba630e84",
+      "vid": "607f26d8-ef16-4455-a4c3-a33fa7013c4c",
+      "lastSeen": 1778751338501,
+      "firstSeen": 1778751338501
+    },
+    "43034a33-798a-4696-b46d-7a6482c66845": {
+      "sid": "43034a33-798a-4696-b46d-7a6482c66845",
+      "vid": "a6872f22-0d69-4ab5-ae4e-f9f73c20425a",
+      "lastSeen": 1778751343104,
+      "firstSeen": 1778751343104
+    },
+    "9bd806c3-4d15-4f33-af01-5e41e054f4e5": {
+      "sid": "9bd806c3-4d15-4f33-af01-5e41e054f4e5",
+      "vid": "1dc626cd-de26-4fe1-b680-9bfd5b630c54",
+      "lastSeen": 1778751457013,
+      "firstSeen": 1778751441118
     }
   },
   "visitorsByDay": {
@@ -45,7 +63,15 @@
     },
     "2026-05-14": {
       "53eb8be7-90c4-491b-ae75-ed26bb6793c0": true,
-      "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f": true
+      "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f": true,
+      "94beb753-03ef-49b2-9919-eee0bd672511": true,
+      "634a037b-97c9-4f5a-b0e9-8d45c22c324a": true,
+      "880293b8-e1a0-463d-98dd-1bd5f7da2c8c": true,
+      "0a468887-aa58-4e68-b7a1-ac5ad08580df": true,
+      "8c791d0d-e386-4014-9275-0fd78bd3c853": true,
+      "607f26d8-ef16-4455-a4c3-a33fa7013c4c": true,
+      "a6872f22-0d69-4ab5-ae4e-f9f73c20425a": true,
+      "1dc626cd-de26-4fe1-b680-9bfd5b630c54": true
     }
   },
   "pageviewsByDay": {
@@ -55,7 +81,7 @@
     "2026-02-12": 132,
     "2026-02-26": 189,
     "2026-02-27": 826,
-    "2026-05-14": 2
+    "2026-05-14": 20
   },
   "lastEvents": [
     {
@@ -3590,6 +3616,153 @@
       "ts": 1778750160994,
       "vid": "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f",
       "sid": "83a52049-e716-4cef-a4ad-85a3b5d0c783",
+      "path": "/",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778750387770,
+      "vid": "94beb753-03ef-49b2-9919-eee0bd672511",
+      "sid": "a576383e-bee3-46b8-895c-5eaff82debbb",
+      "path": "/",
+      "ref": "https://app.emergent.sh/",
+      "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+      "ip": "79.117.204.27"
+    },
+    {
+      "ts": 1778750417808,
+      "vid": "94beb753-03ef-49b2-9919-eee0bd672511",
+      "sid": "a576383e-bee3-46b8-895c-5eaff82debbb",
+      "path": "/read/84",
+      "ref": "https://app.emergent.sh/",
+      "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+      "ip": "79.117.204.27"
+    },
+    {
+      "ts": 1778750442925,
+      "vid": "94beb753-03ef-49b2-9919-eee0bd672511",
+      "sid": "a576383e-bee3-46b8-895c-5eaff82debbb",
+      "path": "/",
+      "ref": "https://app.emergent.sh/",
+      "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+      "ip": "79.117.204.27"
+    },
+    {
+      "ts": 1778751083355,
+      "vid": "634a037b-97c9-4f5a-b0e9-8d45c22c324a",
+      "sid": "d1699fed-db0c-4bae-b681-087663cb67ec",
+      "path": "/ar/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751096914,
+      "vid": "880293b8-e1a0-463d-98dd-1bd5f7da2c8c",
+      "sid": "7d6a7f6c-ae89-4086-a43a-96f4b579f6e2",
+      "path": "/ar/book/1",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751185696,
+      "vid": "0a468887-aa58-4e68-b7a1-ac5ad08580df",
+      "sid": "25327d4e-7d19-4a3b-8ee3-978157647762",
+      "path": "/",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751202217,
+      "vid": "0a468887-aa58-4e68-b7a1-ac5ad08580df",
+      "sid": "25327d4e-7d19-4a3b-8ee3-978157647762",
+      "path": "/ar/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751231603,
+      "vid": "0a468887-aa58-4e68-b7a1-ac5ad08580df",
+      "sid": "25327d4e-7d19-4a3b-8ee3-978157647762",
+      "path": "/ar/book/1",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751260930,
+      "vid": "0a468887-aa58-4e68-b7a1-ac5ad08580df",
+      "sid": "25327d4e-7d19-4a3b-8ee3-978157647762",
+      "path": "/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751290897,
+      "vid": "0a468887-aa58-4e68-b7a1-ac5ad08580df",
+      "sid": "25327d4e-7d19-4a3b-8ee3-978157647762",
+      "path": "/",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751317715,
+      "vid": "8c791d0d-e386-4014-9275-0fd78bd3c853",
+      "sid": "ead5e829-25ea-41f0-9b82-d39431792876",
+      "path": "/ar/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751338501,
+      "vid": "607f26d8-ef16-4455-a4c3-a33fa7013c4c",
+      "sid": "e84b1fbd-7105-458a-8bd8-712fba630e84",
+      "path": "/ar/book/1",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751343104,
+      "vid": "a6872f22-0d69-4ab5-ae4e-f9f73c20425a",
+      "sid": "43034a33-798a-4696-b46d-7a6482c66845",
+      "path": "/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751441118,
+      "vid": "1dc626cd-de26-4fe1-b680-9bfd5b630c54",
+      "sid": "9bd806c3-4d15-4f33-af01-5e41e054f4e5",
+      "path": "/",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751447100,
+      "vid": "1dc626cd-de26-4fe1-b680-9bfd5b630c54",
+      "sid": "9bd806c3-4d15-4f33-af01-5e41e054f4e5",
+      "path": "/ar/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751450507,
+      "vid": "1dc626cd-de26-4fe1-b680-9bfd5b630c54",
+      "sid": "9bd806c3-4d15-4f33-af01-5e41e054f4e5",
+      "path": "/ar/book/5126",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751453911,
+      "vid": "1dc626cd-de26-4fe1-b680-9bfd5b630c54",
+      "sid": "9bd806c3-4d15-4f33-af01-5e41e054f4e5",
+      "path": "/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778751457013,
+      "vid": "1dc626cd-de26-4fe1-b680-9bfd5b630c54",
+      "sid": "9bd806c3-4d15-4f33-af01-5e41e054f4e5",
       "path": "/",
       "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
       "ip": "35.225.230.28"
