@@ -10,9 +10,15 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          500: "#E50914",
-          600: "#B20710",
+          500: "#D97706",
+          600: "#B45309",
         },
+      },
+      fontFamily: {
+        heading: ["Playfair Display", "Georgia", "serif"],
+        body: ["Outfit", "system-ui", "sans-serif"],
+        "ar-heading": ["Amiri", "serif"],
+        "ar-body": ["Tajawal", "sans-serif"],
       },
     },
   },

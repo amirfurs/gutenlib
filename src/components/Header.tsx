@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Languages,
   Library,
-  BookText,
   Star,
 } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
@@ -27,15 +26,16 @@ function NavItem({
   return (
     <Link
       href={href}
+      data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
       className={
-        "inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs ring-1 transition sm:px-3 sm:py-1.5 sm:text-sm " +
+        "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium transition-all duration-200 " +
         (active
-          ? "bg-white/10 text-white ring-white/15"
-          : "text-zinc-300 ring-white/10 hover:bg-white/5 hover:text-white")
+          ? "bg-amber-600/15 text-amber-200 ring-1 ring-amber-500/20"
+          : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200")
       }
     >
-      <span className="text-zinc-400">{icon}</span>
-      <span className="hidden sm:inline font-medium">{label}</span>
+      <span className={active ? "text-amber-400" : "text-zinc-500"}>{icon}</span>
+      <span className="hidden sm:inline">{label}</span>
     </Link>
   );
 }
@@ -71,35 +71,35 @@ export function Header() {
       pathname.startsWith("/ar/library"));
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="group inline-flex items-center gap-2 text-sm font-black tracking-wide">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-500/15 ring-1 ring-brand-500/25 transition group-hover:bg-brand-500/20">
-              <Library className="h-4.5 w-4.5 text-brand-500" />
+    <header className="sticky top-0 z-40 glass-nav" data-testid="main-header">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3 md:px-12">
+        <div className="flex items-center gap-5">
+          <Link href="/" className="group inline-flex items-center gap-2.5" data-testid="nav-logo">
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-amber-600/15 ring-1 ring-amber-500/20 transition group-hover:bg-amber-600/25">
+              <Library className="h-4 w-4 text-amber-500" />
             </span>
-            <span className="hidden sm:inline">
+            <span className="hidden text-[15px] font-bold tracking-wide sm:inline">
               <span className="text-white">GUTEN</span>
-              <span className="text-brand-500">LIB</span>
+              <span className="text-amber-500">LIB</span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-2 md:flex">
-            <NavItem href="/books" label="Books" icon={<BookOpen className="h-4 w-4" />} active={isActive("/books")} />
+          <nav className="hidden items-center gap-1.5 md:flex">
+            <NavItem href="/books" label="Books" icon={<BookOpen className="h-3.5 w-3.5" />} active={isActive("/books")} />
             {inEnglishBooks ? (
               <>
-                <NavItem href="/library" label="Library" icon={<Star className="h-4 w-4" />} active={isActive("/library")} />
-                <NavItem href="/reading" label="Reading" icon={<Bookmark className="h-4 w-4" />} active={isActive("/reading")} />
-                <NavItem href="/finished" label="Finished" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/finished")} />
+                <NavItem href="/library" label="Library" icon={<Star className="h-3.5 w-3.5" />} active={isActive("/library")} />
+                <NavItem href="/reading" label="Reading" icon={<Bookmark className="h-3.5 w-3.5" />} active={isActive("/reading")} />
+                <NavItem href="/finished" label="Finished" icon={<CheckCircle2 className="h-3.5 w-3.5" />} active={isActive("/finished")} />
               </>
             ) : null}
 
-            <NavItem href="/ar/books" label="Arabic" icon={<Languages className="h-4 w-4" />} active={isActive("/ar")} />
+            <NavItem href="/ar/books" label="Arabic" icon={<Languages className="h-3.5 w-3.5" />} active={isActive("/ar")} />
             {inArabicSection ? (
               <>
-                <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-4 w-4" />} active={isActive("/ar/library")} />
-                <NavItem href="/ar/reading" label="تتم القراءة" icon={<Bookmark className="h-4 w-4" />} active={isActive("/ar/reading")} />
-                <NavItem href="/ar/finished" label="تمّت القراءة" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/ar/finished")} />
+                <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-3.5 w-3.5" />} active={isActive("/ar/library")} />
+                <NavItem href="/ar/reading" label="تتم القراءة" icon={<Bookmark className="h-3.5 w-3.5" />} active={isActive("/ar/reading")} />
+                <NavItem href="/ar/finished" label="تمّت القراءة" icon={<CheckCircle2 className="h-3.5 w-3.5" />} active={isActive("/ar/finished")} />
               </>
             ) : null}
           </nav>
@@ -109,22 +109,22 @@ export function Header() {
       </div>
 
       {/* Mobile quick links */}
-      <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-3 md:hidden">
-        <NavItem href="/books" label="Books" icon={<BookOpen className="h-4 w-4" />} active={isActive("/books")} />
+      <div className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto px-6 pb-3 md:hidden">
+        <NavItem href="/books" label="Books" icon={<BookOpen className="h-3.5 w-3.5" />} active={isActive("/books")} />
         {inEnglishBooks ? (
           <>
-            <NavItem href="/library" label="Library" icon={<Star className="h-4 w-4" />} active={isActive("/library")} />
-            <NavItem href="/reading" label="Reading" icon={<Bookmark className="h-4 w-4" />} active={isActive("/reading")} />
-            <NavItem href="/finished" label="Finished" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/finished")} />
+            <NavItem href="/library" label="Library" icon={<Star className="h-3.5 w-3.5" />} active={isActive("/library")} />
+            <NavItem href="/reading" label="Reading" icon={<Bookmark className="h-3.5 w-3.5" />} active={isActive("/reading")} />
+            <NavItem href="/finished" label="Finished" icon={<CheckCircle2 className="h-3.5 w-3.5" />} active={isActive("/finished")} />
           </>
         ) : null}
 
-        <NavItem href="/ar/books" label="Arabic" icon={<Languages className="h-4 w-4" />} active={isActive("/ar")} />
+        <NavItem href="/ar/books" label="Arabic" icon={<Languages className="h-3.5 w-3.5" />} active={isActive("/ar")} />
         {inArabicSection ? (
           <>
-            <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-4 w-4" />} active={isActive("/ar/library")} />
-            <NavItem href="/ar/reading" label="تتم القراءة" icon={<Bookmark className="h-4 w-4" />} active={isActive("/ar/reading")} />
-            <NavItem href="/ar/finished" label="تمّت" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/ar/finished")} />
+            <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-3.5 w-3.5" />} active={isActive("/ar/library")} />
+            <NavItem href="/ar/reading" label="تتم القراءة" icon={<Bookmark className="h-3.5 w-3.5" />} active={isActive("/ar/reading")} />
+            <NavItem href="/ar/finished" label="تمّت" icon={<CheckCircle2 className="h-3.5 w-3.5" />} active={isActive("/ar/finished")} />
           </>
         ) : null}
       </div>

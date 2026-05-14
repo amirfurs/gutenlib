@@ -22,11 +22,12 @@ export function FavoriteStar({ bookKey, className }: { bookKey: string; classNam
   return (
     <button
       type="button"
+      data-testid="favorite-star-btn"
       className={
-        "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ring-1 transition disabled:opacity-60 " +
+        "inline-flex items-center gap-2 rounded-full px-3 py-2.5 text-sm font-medium ring-1 transition-all duration-200 disabled:opacity-60 " +
         (fav
-          ? "bg-yellow-400/15 text-yellow-200 ring-yellow-400/30 hover:bg-yellow-400/20"
-          : "bg-white/5 text-zinc-200 ring-white/10 hover:bg-white/10") +
+          ? "bg-amber-500/15 text-amber-300 ring-amber-400/25 hover:bg-amber-500/20"
+          : "bg-white/5 text-zinc-400 ring-white/8 hover:bg-white/8 hover:text-zinc-200") +
         (className ? ` ${className}` : "")
       }
       disabled={busy}
@@ -36,16 +37,16 @@ export function FavoriteStar({ bookKey, className }: { bookKey: string; classNam
         try {
           setBusy(true);
           const next = !fav;
-          setFav(next); // optimistic
+          setFav(next);
           await setFavorite(bookKey, next);
         } finally {
           setBusy(false);
         }
       }}
-      aria-label={fav ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-      title={fav ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+      aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+      title={fav ? "Remove from favorites" : "Add to favorites"}
     >
-      <Star className={"h-4 w-4 " + (fav ? "fill-yellow-400 text-yellow-400" : "text-zinc-300")} />
+      <Star className={"h-4 w-4 transition " + (fav ? "fill-amber-400 text-amber-400" : "text-zinc-500")} />
     </button>
   );
 }

@@ -42,9 +42,10 @@ export function TopicsSelect() {
         qs.set("page", "1");
         router.push(`/books?${qs.toString()}`);
       }}
-      className="h-10 rounded-md bg-white/5 px-3 text-sm text-white ring-1 ring-white/10"
+      data-testid="topics-select"
+      className="h-11 rounded-xl bg-white/5 px-4 text-sm text-white ring-1 ring-white/8 focus:ring-2 focus:ring-amber-500/40 transition"
     >
-      <option value="">{loading ? "Loading topics…" : "All topics"}</option>
+      <option value="">{loading ? "Loading topics..." : "All topics"}</option>
       {options.slice(1).map((t) => (
         <option key={t} value={t}>
           {t}

@@ -1,11 +1,17 @@
 {
   "version": 1,
   "activeSessions": {
-    "96d0f736-ef5c-4175-b3c2-863f552860d0": {
-      "sid": "96d0f736-ef5c-4175-b3c2-863f552860d0",
-      "vid": "bb1ac384-b4c5-485b-8d3f-bfa51a74bb9d",
-      "lastSeen": 1772194735185,
-      "firstSeen": 1772145525772
+    "e9d92b72-b9e4-404e-a843-b8c2811f22d6": {
+      "sid": "e9d92b72-b9e4-404e-a843-b8c2811f22d6",
+      "vid": "53eb8be7-90c4-491b-ae75-ed26bb6793c0",
+      "lastSeen": 1778750144511,
+      "firstSeen": 1778750144511
+    },
+    "83a52049-e716-4cef-a4ad-85a3b5d0c783": {
+      "sid": "83a52049-e716-4cef-a4ad-85a3b5d0c783",
+      "vid": "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f",
+      "lastSeen": 1778750160994,
+      "firstSeen": 1778750160994
     }
   },
   "visitorsByDay": {
@@ -36,6 +42,10 @@
     },
     "2026-02-27": {
       "bb1ac384-b4c5-485b-8d3f-bfa51a74bb9d": true
+    },
+    "2026-05-14": {
+      "53eb8be7-90c4-491b-ae75-ed26bb6793c0": true,
+      "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f": true
     }
   },
   "pageviewsByDay": {
@@ -44,7 +54,8 @@
     "2026-02-06": 1269,
     "2026-02-12": 132,
     "2026-02-26": 189,
-    "2026-02-27": 826
+    "2026-02-27": 826,
+    "2026-05-14": 2
   },
   "lastEvents": [
     {
@@ -3566,6 +3577,22 @@
       "path": "/room/test123",
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
       "ip": "::1"
+    },
+    {
+      "ts": 1778750144511,
+      "vid": "53eb8be7-90c4-491b-ae75-ed26bb6793c0",
+      "sid": "e9d92b72-b9e4-404e-a843-b8c2811f22d6",
+      "path": "/ar/books",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
+    },
+    {
+      "ts": 1778750160994,
+      "vid": "07ec357f-4d92-48f4-ab39-cbaf2a59cf9f",
+      "sid": "83a52049-e716-4cef-a4ad-85a3b5d0c783",
+      "path": "/",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.0 Safari/537.36",
+      "ip": "35.225.230.28"
     }
   ]
 }

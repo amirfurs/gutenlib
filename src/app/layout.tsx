@@ -11,12 +11,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      {/* Some browser extensions inject attributes into <body>, causing hydration warnings in dev. */}
-      <body suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body suppressHydrationWarning className="font-body">
         <AnalyticsBeacon />
         <div className="min-h-screen bg-aurora">
           <Header />
-          <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-7xl px-6 md:px-12">
             <div className="py-6">{children}</div>
           </div>
         </div>

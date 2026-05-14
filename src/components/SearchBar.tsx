@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { ablAuthors, ablThumbnailUrl } from "@/lib/abl/helpers";
 
 type SuggestResponse = {
@@ -97,12 +97,11 @@ export function SearchBar() {
     setOpen(false);
   }
 
-  // only show in header on most pages
   const hide = pathname === "/read" || pathname.startsWith("/read/") || pathname.startsWith("/ar/read/");
   if (hide) return null;
 
   return (
-    <div ref={wrapRef} className="relative w-[min(640px,62vw)]">
+    <div ref={wrapRef} className="relative w-[min(520px,55vw)]" data-testid="search-bar">
       <div className="flex items-center gap-2">
         <div className="relative w-full">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
@@ -117,76 +116,78 @@ export function SearchBar() {
               }
               if (e.key === "Escape") setOpen(false);
             }}
-            placeholder={inArabic ? "ابحث في الكتب العربية…" : "Search books / authors / topics…"}
-            className="h-10 w-full rounded-md bg-white/5 pl-10 pr-3 text-sm text-white ring-1 ring-white/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-brand-500/50"
+            placeholder={inArabic ? "ابحث في الكتب العربية..." : "Search books, authors, topics..."}
+            data-testid="search-input"
+            className="h-10 w-full rounded-full bg-white/5 pl-10 pr-9 text-sm text-white ring-1 ring-white/8 placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/40 transition-all duration-200"
           />
+          {q ? (
+            <button
+              onClick={() => { setQ(""); setData(null); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
+              data-testid="search-clear"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
-        <button
-          type="button"
-          onClick={submit}
-          className="hidden h-10 rounded-md bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600 sm:inline-flex"
-        >
-          Search
-        </button>
       </div>
 
       {open ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
-          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-            <div className="text-xs text-zinc-400">{loading ? "Searching…" : trimmed ? "Suggestions" : ""}</div>
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl glass animate-fade-in" data-testid="search-dropdown">
+          <div className="flex items-center justify-between border-b border-white/6 px-4 py-2.5">
+            <div className="text-xs font-medium text-zinc-500">{loading ? "Searching..." : trimmed ? "Suggestions" : ""}</div>
             {trimmed ? (
-              <Link href={actionHref} className="text-xs text-zinc-300 hover:text-white" onClick={() => setOpen(false)}>
-                View all →
+              <Link href={actionHref} className="text-xs font-medium text-amber-400 hover:text-amber-300 transition" onClick={() => setOpen(false)} data-testid="search-view-all">
+                View all &rarr;
               </Link>
             ) : null}
           </div>
 
           {!trimmed ? (
-            <div className="px-3 py-4 text-sm text-zinc-400">Type to search…</div>
+            <div className="px-4 py-5 text-sm text-zinc-500">Type to search...</div>
           ) : (
             <div className="max-h-[420px] overflow-auto">
-              {/* Books first */}
-              <div className="px-3 pt-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{inArabic ? "الكتب" : "Books"}</div>
+              <div className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500">{inArabic ? "الكتب" : "Books"}</div>
               <div className="p-2">
                 {(data?.books ?? []).length ? (
-                  <div className="grid gap-1">
+                  <div className="grid gap-0.5">
                     {data!.books.map((b) => (
                       <Link
                         key={b.id}
                         href={inArabic ? `/ar/book/${b.id}` : `/book/${b.id}`}
-                        className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5"
+                        className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition hover:bg-white/5"
                         onClick={() => setOpen(false)}
+                        data-testid={`search-result-book-${b.id}`}
                       >
-                        <div className="h-10 w-7 overflow-hidden rounded bg-white/5 ring-1 ring-white/10">
+                        <div className="h-12 w-8 overflow-hidden rounded-md bg-white/5 ring-1 ring-white/8">
                           {b.cover ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={b.cover} alt="" className="h-full w-full object-cover" />
                           ) : null}
                         </div>
                         <div className="min-w-0">
-                          <div className="line-clamp-1 text-sm text-white">{b.title}</div>
-                          <div className="line-clamp-1 text-xs text-zinc-400">{b.author}</div>
+                          <div className="line-clamp-1 text-sm font-medium text-white">{b.title}</div>
+                          <div className="line-clamp-1 text-xs text-zinc-500">{b.author}</div>
                         </div>
                       </Link>
                     ))}
                   </div>
                 ) : (
-                  <div className="px-2 py-2 text-sm text-zinc-400">{inArabic ? "لا توجد نتائج." : "No books."}</div>
+                  <div className="px-2 py-2 text-sm text-zinc-500">{inArabic ? "لا توجد نتائج." : "No books found."}</div>
                 )}
               </div>
 
               {inArabic ? null : (
                 <>
-                  {/* Authors */}
-                  <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Authors</div>
+                  <div className="px-4 pt-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500">Authors</div>
                   <div className="p-2">
                     {(data?.authors ?? []).length ? (
-                      <div className="grid gap-1">
+                      <div className="grid gap-0.5">
                         {data!.authors.map((name) => (
                           <Link
                             key={name}
                             href={`/author?name=${encodeURIComponent(name)}`}
-                            className="rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                            className="rounded-xl px-2.5 py-2.5 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
                             onClick={() => setOpen(false)}
                           >
                             {name}
@@ -194,20 +195,19 @@ export function SearchBar() {
                         ))}
                       </div>
                     ) : (
-                      <div className="px-2 py-2 text-sm text-zinc-400">No authors.</div>
+                      <div className="px-2 py-2 text-sm text-zinc-500">No authors.</div>
                     )}
                   </div>
 
-                  {/* Topics */}
-                  <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Topics</div>
-                  <div className="p-2">
+                  <div className="px-4 pt-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500">Topics</div>
+                  <div className="p-2 pb-3">
                     {(data?.topics ?? []).length ? (
-                      <div className="grid gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {data!.topics.map((t) => (
                           <Link
                             key={t}
                             href={`/books?${new URLSearchParams({ sort: "popular", topic: t }).toString()}`}
-                            className="rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                            className="chip"
                             onClick={() => setOpen(false)}
                           >
                             {t}
@@ -215,7 +215,7 @@ export function SearchBar() {
                         ))}
                       </div>
                     ) : (
-                      <div className="px-2 py-2 text-sm text-zinc-400">No topics.</div>
+                      <div className="px-2 py-2 text-sm text-zinc-500">No topics.</div>
                     )}
                   </div>
                 </>
