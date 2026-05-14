@@ -1,0 +1,102 @@
+{
+  "project_name": "GutenLib",
+  "theme": {
+    "primary_mode": "dark",
+    "archetype": "Archetype 5 (Jewel & Luxury)",
+    "description": "A cinematic, moody, and expensive personal library feel with deep ambient lighting, built for focused reading and elegant display.",
+    "colors": {
+      "background": {
+        "base": "#05050A",
+        "surface": "#0F0F16",
+        "glass": "rgba(20, 20, 30, 0.4)"
+      },
+      "text": {
+        "primary": "#F8F8F8",
+        "secondary": "#A1A1AA",
+        "muted": "#52525B"
+      },
+      "brand": {
+        "primary": "#D97706",
+        "primary_hover": "#F59E0B",
+        "emerald_accent": "#064E3B",
+        "aurora_warm": "rgba(180, 83, 9, 0.15)",
+        "aurora_cool": "rgba(6, 78, 59, 0.15)"
+      },
+      "reader_modes": {
+        "dark": { "bg": "#121212", "text": "#E4E4E7" },
+        "sepia": { "bg": "#F4ECD8", "text": "#433422" },
+        "light": { "bg": "#FAFAFA", "text": "#18181B" }
+      },
+      "border": {
+        "default": "rgba(255, 255, 255, 0.08)",
+        "focus": "rgba(217, 119, 6, 0.5)"
+      }
+    }
+  },
+  "typography": {
+    "english": {
+      "heading_font": "Playfair Display",
+      "body_font": "Outfit",
+      "mono_font": "JetBrains Mono"
+    },
+    "arabic": {
+      "heading_font": "Amiri",
+      "body_font": "Tajawal",
+      "mono_font": "Courier New"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-6xl tracking-tight leading-none",
+      "h2": "text-3xl md:text-4xl tracking-tight leading-tight",
+      "h3": "text-xl md:text-2xl leading-snug",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm uppercase tracking-[0.15em]"
+    },
+    "instructions": "Always apply logical typography scaling. Ensure font-weight is slightly higher for Arabic text (e.g. font-medium instead of font-normal) to match the visual weight of English fonts."
+  },
+  "layout_and_spacing": {
+    "strategy": "Generous Spacing (E1 System). Never use tight paddings for structural containers.",
+    "grid_system": {
+      "homepage": "Bento Grid pattern. Use grid-cols-1 md:grid-cols-12 gap-8.",
+      "book_list": "Responsive grid (grid-cols-2 md:grid-cols-4 lg:grid-cols-6) with gap-6."
+    },
+    "containers": "Use max-w-7xl mx-auto px-6 md:px-12.",
+    "rtl_support": "CRITICAL: Do NOT use left/right utilities (ml-4, pr-2). ALWAYS use logical properties (ms-4, me-4, ps-2, pe-2, border-s). Add dir='rtl' attribute to the HTML tag when the Arabic language is selected."
+  },
+  "surfaces_and_components": {
+    "glassmorphism": "Use heavily for navigation, floating player/reader controls, and feature cards. Classes: `backdrop-blur-2xl bg-white/5 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]`.",
+    "book_cards": {
+      "aspect_ratio": "aspect-[2/3]",
+      "styling": "Rounded-md overflow-hidden transition-all duration-300",
+      "hover_state": "hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(217,119,6,0.15)] group-hover:scale-105 for the image."
+    },
+    "buttons": {
+      "primary": "bg-brand-primary text-white font-medium px-6 py-3 rounded-full transition-all hover:bg-brand-primary_hover shadow-lg hover:shadow-brand-primary/50",
+      "secondary": "backdrop-blur-md bg-white/10 border border-white/20 text-white rounded-full px-6 py-3 hover:bg-white/20 transition-all"
+    }
+  },
+  "motion_and_interaction": {
+    "page_transitions": "Fade and slight slide up (y: 20 -> 0) using Framer Motion.",
+    "micro_interactions": "All buttons and cards must have active:scale-95 transition-transform duration-200.",
+    "scroll": "Use Lenis for smooth momentum scrolling."
+  },
+  "media_and_assets": {
+    "images": {
+      "hero_background": "https://static.prod-images.emergentagent.com/jobs/c47ec45d-ceaf-44c6-b19a-a68a2abaa692/images/0a17ce3a7495e4c34345373ccdb51fae2d685876060bd1b8ccdea0a9be595496.png",
+      "aurora_texture": "https://static.prod-images.emergentagent.com/jobs/c47ec45d-ceaf-44c6-b19a-a68a2abaa692/images/d5da1f2f5ada5556934fad1c6574ecbd33e996ef55637f5827fd4c0ffa2c377a.png",
+      "library_interior": "https://images.unsplash.com/photo-1777343532797-5e598b031e51?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBkYXJrJTIwbGlicmFyeSUyMGludGVyaW9yfGVufDB8fHx8MTc3ODc0OTQ2Nnww&ixlib=rb-4.1.0&q=85"
+    },
+    "icons": "Use @phosphor-icons/react (Duotone weight) for high-end look."
+  },
+  "accessibility_and_testing": {
+    "contrast": "Ensure minimum 4.5:1 ratio for text against backgrounds.",
+    "testing": "All interactive elements (buttons, links, inputs, tabs) MUST have data-testid attributes (e.g., data-testid='read-book-button')."
+  },
+  "instructions_to_main_agent": [
+    "Install and setup @phosphor-icons/react, framer-motion, and @studio-freight/react-lenis.",
+    "Include Google Fonts for 'Playfair Display', 'Outfit', 'Amiri', and 'Tajawal'.",
+    "Replace the bland homepage with a large cinematic hero section featuring the aurora_texture as a slow-moving background under a dark glass overlay.",
+    "Refactor Arabic components to use logical Tailwind properties (e.g. start/end instead of left/right) to properly support RTL directions seamlessly.",
+    "Redesign book cards to be taller (aspect-[2/3]), removing any card borders and relying on the cover image and typography for hierarchy.",
+    "Ensure the reading interface has a clean, distraction-free 'Zen' mode, allowing readers to toggle between dark, sepia, and light themes."
+  ]
+}
