@@ -54,7 +54,7 @@
 - None currently
 
 ### P1 (High)
-- Arabic books API (ABL gRPC) returns empty results - external service issue
+- ~~Arabic books API (ABL gRPC) returns empty results~~ **FIXED** (Jan 2026): Added nodeOptions for SSL + removed empty fields from list request
 - Reader components (Reader.tsx, EpubReader.tsx, ArabicReader.tsx) still use old design
 - LibraryClient.tsx still uses old design patterns
 
