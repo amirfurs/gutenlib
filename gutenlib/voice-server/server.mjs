@@ -24,11 +24,19 @@ const ORIGINS = (process.env.VOICE_ORIGINS || ORIGIN)
 
 function isAllowedOrigin(reqOrigin) {
   if (!reqOrigin) return true;
-  if (ORIGINS.includes(reqOrigin)) return true;
+  if (ORIGINS.includes(reqOrigin) || ORIGINS.includes("*")) return true;
 
   try {
     const url = new URL(reqOrigin);
     const host = url.hostname;
+    // Allow Vercel preview and production deployments
+    if (
+      process.env.VERCEL ||
+      host.endsWith(".vercel.app") ||
+      (process.env.VERCEL_URL && host === process.env.VERCEL_URL)
+    ) {
+      return true;
+    }
     // Allow local development and LAN access
     if (
       host === "localhost" ||
@@ -133,8 +141,15 @@ function buildRoomSummary(room) {
 }
 
 const server = http.createServer((req, res) => {
+  // If request is for Socket.IO polling / handshake, allow Socket.IO listener to handle it
+  if (req.url?.startsWith("/socket.io")) {
+    return;
+  }
+
   res.setHeader("Vary", "Origin");
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Access-Control-Allow-Private-Network", "true");
+
   if (!isAllowedOrigin(req.headers.origin)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "ORIGIN_NOT_ALLOWED" }));
@@ -223,7 +238,9 @@ const server = http.createServer((req, res) => {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin),
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Requested-With,Accept,Origin",
+      "Access-Control-Allow-Private-Network": "true",
+      "Access-Control-Max-Age": "86400",
     });
     res.end();
     return;

@@ -21,17 +21,45 @@ export default function VoicePage() {
     if (!name.trim() || !room.trim()) { setError("أدخل اسمك واسم الغرفة للبدء."); return; }
     creating.current = true; setLoading(true);
     try {
-      const serverUrl = getVoiceServerUrl();
-      const response = await fetch(`${serverUrl}/rooms`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostDisplayName: name.trim(), roomName: room.trim() }),
-        signal: AbortSignal.timeout(15000),
-      });
+      const payload = JSON.stringify({ hostDisplayName: name.trim(), roomName: room.trim() });
+      const headers = { "Content-Type": "application/json" };
+      let response: Response | null = null;
+
+      // 1. Try relative /rooms (same-origin Next.js proxy; avoids cross-port, CORS, PNA, and firewall issues on phones)
+      try {
+        const r = await fetch("/rooms", { method: "POST", headers, body: payload, signal: AbortSignal.timeout(6000) });
+        if (r.ok) response = r;
+      } catch {
+        // Fallback
+      }
+
+      // 2. Try relative /api/rooms
+      if (!response) {
+        try {
+          const r = await fetch("/api/rooms", { method: "POST", headers, body: payload, signal: AbortSignal.timeout(6000) });
+          if (r.ok) response = r;
+        } catch {
+          // Fallback
+        }
+      }
+
+      // 3. Fallback to direct voice server URL
+      if (!response) {
+        const serverUrl = getVoiceServerUrl();
+        response = await fetch(`${serverUrl}/rooms`, {
+          method: "POST",
+          headers,
+          body: payload,
+          signal: AbortSignal.timeout(10000),
+        });
+      }
+
       const data = await response.json() as RoomResponse & { error?: string };
       if (!response.ok) throw new Error(data.error ?? "CREATE_FAILED");
-      if (!storage.set(`gutenlib.voice.hostSecret.${data.inviteToken}`, data.hostSecret)) { setError("اسمح بالتخزين المحلي في المتصفح للاحتفاظ بصلاحية المضيف ثم حاول مجددًا."); return; }
-      storage.set(`gutenlib.voice.hostName.${data.inviteToken}`, data.hostDisplayName); storage.set(`gutenlib.voice.roomName.${data.inviteToken}`, data.roomName); storage.set("gutenlib.voice.name", data.hostDisplayName);
+      storage.set(`gutenlib.voice.hostSecret.${data.inviteToken}`, data.hostSecret);
+      storage.set(`gutenlib.voice.hostName.${data.inviteToken}`, data.hostDisplayName);
+      storage.set(`gutenlib.voice.roomName.${data.inviteToken}`, data.roomName);
+      storage.set("gutenlib.voice.name", data.hostDisplayName);
       router.push(`/room/${data.inviteToken}?host=1`);
     } catch (err) {
       console.error("[Voice] Room creation failed:", err);

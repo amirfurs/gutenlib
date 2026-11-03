@@ -108,16 +108,45 @@ export default function RoomPage() {
     setPreviewRoom(storage.get("gutenlib.voice.roomName." + token));
     if (!token) return;
     const request = new AbortController();
-    const serverUrl = getVoiceServerUrl();
-    fetch(serverUrl + "/rooms/" + encodeURIComponent(token), { signal: request.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error();
-        const data = await response.json();
-        setPreviewRoom(data.roomName || "غرفة قراءة");
-      })
-      .catch(() => {
-        if (!request.signal.aborted) setPreviewError("تعذر العثور على الغرفة. تحقق من الرابط أو من اتصالك.");
-      });
+
+    async function loadRoomPreview() {
+      // 1. Try same-origin /rooms/:token
+      try {
+        const res = await fetch("/rooms/" + encodeURIComponent(token), { signal: request.signal });
+        if (res.ok) {
+          const data = await res.json();
+          setPreviewRoom(data.roomName || "غرفة قراءة");
+          return;
+        }
+      } catch {}
+
+      // 2. Try same-origin /api/rooms/:token
+      try {
+        const res = await fetch("/api/rooms/" + encodeURIComponent(token), { signal: request.signal });
+        if (res.ok) {
+          const data = await res.json();
+          setPreviewRoom(data.roomName || "غرفة قراءة");
+          return;
+        }
+      } catch {}
+
+      // 3. Fallback to direct voice server URL
+      try {
+        const serverUrl = getVoiceServerUrl();
+        const res = await fetch(serverUrl + "/rooms/" + encodeURIComponent(token), { signal: request.signal });
+        if (res.ok) {
+          const data = await res.json();
+          setPreviewRoom(data.roomName || "غرفة قراءة");
+          return;
+        }
+      } catch {}
+
+      if (!request.signal.aborted) {
+        setPreviewError("تعذر العثور على الغرفة. تحقق من الرابط أو من اتصالك.");
+      }
+    }
+
+    void loadRoomPreview();
     return () => request.abort();
   }, [token, hostMode]);
 

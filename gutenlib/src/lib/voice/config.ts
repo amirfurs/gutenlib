@@ -1,24 +1,43 @@
 /**
  * Resolves the active voice server URL.
- * In a browser environment, if connected to localhost or a private LAN IP,
- * it routes directly to port 3001 on the same host to prevent broken external proxying.
+ * - In server functions/SSR: reads the bound service variable `process.env.VOICE_SERVER_URL`
+ *   injected by Vercel Multi-Services.
+ * - In local/LAN browser development: routes to the local voice port (default 3001).
+ * - In production browser environments: routes to `window.location.origin` where top-level
+ *   rewrites (/socket.io, /rooms) seamlessly dispatch to the voice-server service.
  */
 export function getVoiceServerUrl(): string {
-  if (typeof window !== "undefined" && window.location) {
-    const host = window.location.hostname;
-    const isLocalOrLan =
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host === "::1" ||
-      host.startsWith("192.168.") ||
-      host.startsWith("10.") ||
-      host.endsWith(".local") ||
-      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host);
-
-    if (isLocalOrLan) {
-      const port = process.env.NEXT_PUBLIC_LOCAL_VOICE_PORT || "3001";
-      return `${window.location.protocol}//${host}:${port}`;
+  // Server-side (Functions / Server Components / SSR)
+  if (typeof window === "undefined") {
+    const boundUrl = process.env.VOICE_SERVER_URL;
+    if (boundUrl) {
+      const clean = boundUrl.replace(/[\r\n]+/g, "").trim().replace(/\/+$/, "");
+      if (clean) return clean;
     }
+    const publicUrl = process.env.NEXT_PUBLIC_VOICE_SERVER_URL;
+    if (publicUrl) {
+      const clean = publicUrl.replace(/[\r\n]+/g, "").trim().replace(/\/+$/, "");
+      if (clean && !clean.includes("gutenlib-production.up.railway.app")) {
+        return clean;
+      }
+    }
+    return "http://localhost:3001";
+  }
+
+  // Browser client
+  const host = window.location.hostname;
+  const isLocalOrLan =
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host.startsWith("192.168.") ||
+    host.startsWith("10.") ||
+    host.endsWith(".local") ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host);
+
+  if (isLocalOrLan) {
+    const port = process.env.NEXT_PUBLIC_LOCAL_VOICE_PORT || "3001";
+    return `${window.location.protocol}//${host}:${port}`;
   }
 
   const raw = process.env.NEXT_PUBLIC_VOICE_SERVER_URL;
@@ -29,10 +48,15 @@ export function getVoiceServerUrl(): string {
     }
   }
 
-  return "http://localhost:3001";
+  // Same-origin: handled by Vercel service rewrites (/rooms and /socket.io)
+  return window.location.origin;
 }
 
-export const VOICE_SERVER_URL = typeof window !== "undefined" ? getVoiceServerUrl() : (process.env.NEXT_PUBLIC_VOICE_SERVER_URL?.replace(/[\r\n]+/g, "").trim().replace(/\/+$/, "") || "http://localhost:3001");
+export const VOICE_SERVER_URL = typeof window !== "undefined"
+  ? getVoiceServerUrl()
+  : (process.env.VOICE_SERVER_URL?.replace(/[\r\n]+/g, "").trim().replace(/\/+$/, "") ||
+     process.env.NEXT_PUBLIC_VOICE_SERVER_URL?.replace(/[\r\n]+/g, "").trim().replace(/\/+$/, "") ||
+     "http://localhost:3001");
 
 /**
  * Standard ICE servers including STUN and free TURN fallback relays.

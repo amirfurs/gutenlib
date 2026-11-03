@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { VoiceEngine, type PeerHealth } from "./engine";
 import { getVoiceServerUrl } from "./config";
+import { safeUUID } from "./uuid";
 import type { ActiveBook, ChatMessage, JoinedPayload, PeerInfo, ReadingState, SessionPhase, VoiceRole } from "./types";
 
 export const storage = {
@@ -66,14 +67,18 @@ export function useVoiceRoom(token: string) {
     dispose();
     setState({ ...initial, phase: "joining" });
     const hostKey = "gutenlib.voice.hostSecret." + token;
-    auth.current = hostMode ? storage.get(hostKey) : "";
-    if (hostMode && !auth.current) { setState(s => ({ ...s, phase: "error", error: messageFor("HOST_AUTH_REQUIRED") })); return; }
+    const storedSecret = storage.get(hostKey);
+    // If the URL has ?host=1 but this browser doesn't have the secret (e.g. invite link copied from PC to phone),
+    // automatically fall back to guest mode instead of blocking with HOST_AUTH_REQUIRED.
+    const effectiveHostMode = hostMode && !!storedSecret;
+    auth.current = effectiveHostMode ? storedSecret : "";
+
     if (!name.trim()) { setState(s => ({ ...s, phase: "error", error: "اكتب اسمك قبل الدخول." })); return; }
     storage.set("gutenlib.voice.name", name.trim());
     // Separate host/guest identities prevent opening a guest invite from replacing the host.
-    const identityKey = "gutenlib.voice.identity." + token + (hostMode ? ".host" : ".guest");
+    const identityKey = "gutenlib.voice.identity." + token + (effectiveHostMode ? ".host" : ".guest");
     let clientId = storage.get(identityKey);
-    if (!clientId) { clientId = crypto.randomUUID(); storage.set(identityKey, clientId); }
+    if (!clientId) { clientId = safeUUID(); storage.set(identityKey, clientId); }
     const serverUrl = getVoiceServerUrl();
     const client = io(serverUrl, { autoConnect: false, reconnection: true, reconnectionAttempts: 8, timeout: 10000 });
     socket.current = client;
@@ -131,7 +136,13 @@ export function useVoiceRoom(token: string) {
     client.on("chat-history", ({ messages }: { messages: ChatMessage[] }) => setState(s => ({ ...s, messages })));
     client.on("chat-message", (message: ChatMessage) => setState(s => ({ ...s, messages: s.messages.some(m => m.id === message.id) ? s.messages : [...s.messages, message].slice(-100) })));
     client.on("control-error", ({ error }: { error: string }) => setState(s => ({ ...s, error: messageFor(error) })));
-    client.on("join-error", ({ error }: { error: string }) => finish(error === "KICKED" || error === "ROOM_NOT_FOUND" ? "ended" : "error", messageFor(error)));
+    client.on("join-error", ({ error }: { error: string }) => {
+      if (error === "HOST_NOT_CONNECTED") {
+        setState(s => ({ ...s, phase: "idle", error: messageFor(error) }));
+        return;
+      }
+      finish(error === "KICKED" || error === "ROOM_NOT_FOUND" ? "ended" : "error", messageFor(error));
+    });
     client.on("room-ended", ({ reason }: { reason: string }) => finish("ended", messageFor(reason)));
     client.on("kicked", () => finish("ended", messageFor("KICKED")));
     client.on("session-replaced", () => finish("left", "فُتحت جلستك في تبويب آخر. يمكنك العودة من هنا."));

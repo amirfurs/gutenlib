@@ -1,4 +1,5 @@
 import { openDB } from "@/lib/abl/idb";
+import { safeUUID } from "@/lib/voice/uuid";
 
 // Local-first, sync-ready schema.
 // Later, a signed-in account can sync these rows by (userId, id) using updatedAt + deletedAt + dirty flags.
@@ -90,7 +91,7 @@ export async function getDeviceId(): Promise<string> {
 
   if (existing?.deviceId) return existing.deviceId;
 
-  const deviceId = crypto.randomUUID();
+  const deviceId = safeUUID();
   const row: SyncMeta = { id: "device", deviceId, createdAt: Date.now() };
   os.put(row, "device");
 
@@ -199,7 +200,7 @@ export async function createList(name: string, scope: LibraryScope): Promise<Lis
   const db = await openLibraryDB();
   const now = Date.now();
   const row: ListRow = {
-    id: crypto.randomUUID(),
+    id: safeUUID(),
     scope,
     name,
     createdAt: now,
@@ -333,7 +334,7 @@ export async function addNote(
   const db = await openLibraryDB();
   const now = Date.now();
   const row: NoteRow = {
-    id: crypto.randomUUID(),
+    id: safeUUID(),
     scope,
     bookKey,
     pageNumber,
