@@ -1,5 +1,7 @@
 import { ReadingList } from "@/components/ReadingList";
 
+export const dynamic = "force-static";
+
 export default function FinishedPage() {
   return (
     <main className="mx-auto max-w-5xl px-3 sm:px-4 py-6 sm:py-10">

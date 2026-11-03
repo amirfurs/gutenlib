@@ -1,5 +1,7 @@
 import { ArabicReadingList } from "@/components/abl/ArabicReadingList";
 
+export const dynamic = "force-static";
+
 export default function ArabicFinishedPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-10" dir="rtl">
