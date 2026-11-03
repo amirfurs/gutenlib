@@ -20,3 +20,4 @@ export function safeUUID(): string {
     return v.toString(16);
   });
 }
+

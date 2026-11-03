@@ -43,12 +43,18 @@ export function getVoiceServerUrl(): string {
   const raw = process.env.NEXT_PUBLIC_VOICE_SERVER_URL;
   if (raw) {
     const clean = raw.replace(/[\r\n]+/g, "").trim().replace(/\/+$/, "");
-    if (clean && !clean.includes("gutenlib-production.up.railway.app")) {
+    const isLocalhostUrl = clean.includes("localhost") || clean.includes("127.0.0.1") || clean.includes("::1");
+    // Ignore localhost URLs if we are on a remote/mobile device, and ignore outdated dead hosts
+    if (
+      clean &&
+      !clean.includes("gutenlib-production.up.railway.app") &&
+      (!isLocalhostUrl || isLocalOrLan)
+    ) {
       return clean;
     }
   }
 
-  // Same-origin: handled by Vercel service rewrites (/rooms and /socket.io)
+  // Same-origin: handled by Next.js /rooms and /api/rooms
   return window.location.origin;
 }
 
