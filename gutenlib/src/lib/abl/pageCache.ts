@@ -71,7 +71,7 @@ export async function prefetchPage(url: string, opts: PrefetchOptions = {}): Pro
 
 export function shouldAllowPrefetch(): boolean {
   try {
-    // @ts-ignore
+    // @ts-expect-error Connection API is non-standard
     const c = navigator?.connection;
     if (c?.saveData) return false;
     const et = String(c?.effectiveType ?? "");

@@ -33,8 +33,6 @@ export default async function ArabicBooksPage({
     page: String(page),
     perPage: "40",
     lang: "ar",
-    // filter out non-Arabic books (e.g., Persian)
-    languages: "ar",
   });
   if (q) qs.set("query", q);
   if (author) qs.set("author", author);
@@ -78,13 +76,13 @@ export default async function ArabicBooksPage({
   ).slice(0, 60);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <main className="mx-auto max-w-6xl px-3 sm:px-4 py-6 sm:py-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">كتب عربية</h1>
-          <p className="mt-1 text-sm text-zinc-400">المصدر: grpc.ablibrary.net</p>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">كتب عربية</h1>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-400">المصدر: grpc.ablibrary.net</p>
         </div>
-        <Link href="/" className="text-sm text-zinc-300 hover:text-white">الرئيسية</Link>
+        <Link href="/" className="text-xs sm:text-sm text-zinc-300 hover:text-white">الرئيسية</Link>
       </div>
 
       <ArabicBooksFilters
@@ -92,7 +90,7 @@ export default async function ArabicBooksPage({
         categories={availableCategories}
       />
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
         {items.map((b: any) => {
           const cover = ablThumbnailUrl(b);
           return (
@@ -171,20 +169,20 @@ export default async function ArabicBooksPage({
           return (
             <>
               <Link
-                className={canPrev ? "text-zinc-200 hover:text-white" : "pointer-events-none text-zinc-600"}
+                className={canPrev ? "pressable min-h-[44px] inline-flex items-center justify-center rounded-lg bg-white/5 px-4 py-2 ring-1 ring-white/10 text-zinc-200 hover:text-white" : "pointer-events-none text-zinc-600"}
                 href={`/ar/books?${new URLSearchParams({ ...paramsBase, page: String(current - 1) }).toString()}`}
               >
                 السابق
               </Link>
 
-              <div className="text-zinc-400">
+              <div className="text-zinc-400 font-medium">
                 صفحة {current}
                 {totalPages ? ` / ${totalPages}` : ""}
                 {pagination?.totalItems ? ` — ${pagination.totalItems} كتاب` : ""}
               </div>
 
               <Link
-                className={canNext ? "text-zinc-200 hover:text-white" : "pointer-events-none text-zinc-600"}
+                className={canNext ? "pressable min-h-[44px] inline-flex items-center justify-center rounded-lg bg-white/5 px-4 py-2 ring-1 ring-white/10 text-zinc-200 hover:text-white" : "pointer-events-none text-zinc-600"}
                 href={`/ar/books?${new URLSearchParams({ ...paramsBase, page: String(current + 1) }).toString()}`}
               >
                 التالي

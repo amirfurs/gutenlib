@@ -375,14 +375,14 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={`/book/${id}`} className="text-sm text-zinc-300 hover:text-white">
+    <main className="mx-auto max-w-6xl px-3 sm:px-4 py-4 sm:py-6">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <Link href={`/book/${id}`} className="pressable min-h-[38px] inline-flex items-center text-xs sm:text-sm text-zinc-300 hover:text-white">
           ← Back to book
         </Link>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="hidden items-center gap-2 rounded-md bg-white/5 px-3 py-2 text-xs text-zinc-300 ring-1 ring-white/10 sm:flex">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="hidden items-center gap-2 rounded-md bg-white/5 px-3 py-1.5 text-xs text-zinc-300 ring-1 ring-white/10 sm:flex">
             <span className="text-zinc-400">Progress</span>
             <span className="font-semibold text-white">{Math.round(progress * 100)}%</span>
             <span className="text-zinc-500">{progressReady ? "" : "(estimating…)"}</span>
@@ -390,9 +390,10 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
 
           <button
             className={
-              isFinished
-                ? "rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                : "rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15"
+              "pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg " +
+              (isFinished
+                ? "bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                : "bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15")
             }
             onClick={() => {
               const next = !isFinished;
@@ -406,7 +407,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           </button>
 
           <button
-            className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
+            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
             onClick={() => {
               void refreshNotes((renditionRef.current as any)?.location?.start?.cfi);
               setNotesOpen(true);
@@ -419,7 +420,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           </button>
 
           <button
-            className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
+            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
             onClick={() => setPrefsOpen(true)}
             aria-label="Reading settings"
             title="Reading settings"
@@ -428,7 +429,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           </button>
 
           <button
-            className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
+            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
             onClick={() => renditionRef.current?.prev()}
             aria-label="Previous"
             title="Previous"
@@ -436,7 +437,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
-            className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
+            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
             onClick={() => renditionRef.current?.next()}
             aria-label="Next"
             title="Next"
@@ -444,9 +445,9 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
             <ChevronRight className="h-4 w-4" />
           </button>
           {searchResults.length ? (
-            <div className="hidden items-center gap-2 rounded-md bg-white/5 px-2 py-2 text-xs text-zinc-300 ring-1 ring-white/10 md:flex">
+            <div className="hidden items-center gap-2 rounded-md bg-white/5 px-2 py-1.5 text-xs text-zinc-300 ring-1 ring-white/10 md:flex">
               <button
-                className="rounded bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/15"
+                className="pressable rounded bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/15"
                 onClick={() => goToMatch((matchIdx < 0 ? 0 : matchIdx) - 1)}
                 title="Previous match"
               >
@@ -456,7 +457,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
                 {Math.max(0, matchIdx) + 1}/{searchResults.length}
               </div>
               <button
-                className="rounded bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/15"
+                className="pressable rounded bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/15"
                 onClick={() => goToMatch((matchIdx < 0 ? 0 : matchIdx) + 1)}
                 title="Next match"
               >
@@ -466,7 +467,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           ) : null}
 
           <button
-            className="rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15"
+            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             title="Search (Ctrl/⌘ + F)"
@@ -474,7 +475,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
             <Search className="h-4 w-4" />
           </button>
           <button
-            className="rounded-md bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
             onClick={() => setTocOpen(true)}
             disabled={!flatToc.length}
             aria-label="Table of contents"
@@ -714,21 +715,21 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
         </div>
       ) : null}
 
-      <div className="mt-4 rounded-xl bg-white/5 ring-1 ring-white/10">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-xs text-zinc-400">
-          <div className="flex items-center gap-3">
-            <div>EPUB reader (use ←/→ arrows)</div>
-            <div className="h-2 w-40 overflow-hidden rounded bg-white/10">
-              <div className="h-full bg-brand-500" style={{ width: `${Math.round(progress * 100)}%` }} />
+      <div className="mt-4 rounded-xl bg-white/5 ring-1 ring-white/10 overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between border-b border-white/10 px-3 sm:px-4 py-2 text-xs text-zinc-400 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            <div className="hidden xs:inline truncate">EPUB reader</div>
+            <div className="h-2 w-24 sm:w-40 overflow-hidden rounded bg-white/10 shrink-0">
+              <div className="h-full bg-brand-500 transition-all duration-300" style={{ width: `${Math.round(progress * 100)}%` }} />
             </div>
-            <div className="tabular-nums">{Math.round(progress * 100)}%</div>
+            <div className="tabular-nums shrink-0">{Math.round(progress * 100)}%</div>
           </div>
-          <a className="text-zinc-300 hover:text-white" href={`/api/epub/${id}`} target="_blank" rel="noreferrer">
+          <a className="text-xs text-zinc-300 hover:text-white shrink-0" href={`/api/epub/${id}`} target="_blank" rel="noreferrer">
             Download EPUB
           </a>
         </div>
 
-        <div className="relative h-[78vh]">
+        <div className="relative h-[calc(100dvh-170px)] min-h-[460px]">
           {loading ? (
             <div className="absolute inset-0 grid place-items-center text-sm text-zinc-400">Loading EPUB…</div>
           ) : error ? (
@@ -736,6 +737,14 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
               <div className="max-w-xl rounded-lg bg-black/40 p-4 ring-1 ring-white/10">
                 <div className="text-sm font-semibold text-red-300">Reader error</div>
                 <div className="mt-2 text-sm text-zinc-300">{error}</div>
+                <div className="mt-4 flex justify-center gap-2">
+                  <Link
+                    href={`/read/${id}?mode=txt`}
+                    className="pressable rounded-md bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
+                  >
+                    Switch to Clean Text Reader
+                  </Link>
+                </div>
               </div>
             </div>
           ) : null}

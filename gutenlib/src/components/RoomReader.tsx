@@ -169,9 +169,9 @@ export function RoomReader({
   }, [raw, chunkStarts]);
 
   useEffect(() => {
-    if (clamped !== chunkIndex) onChunkChange(clamped);
+    if (!loading && isHost && clamped !== chunkIndex) onChunkChange(clamped);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clamped]);
+  }, [clamped, loading, isHost]);
 
   if (loading) return <div style={{ opacity: 0.75 }}>جاري تحميل النص…</div>;
   if (error) return <div style={{ color: "#fca5a5" }}>خطأ: {error}</div>;

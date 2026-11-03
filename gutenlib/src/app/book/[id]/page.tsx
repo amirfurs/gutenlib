@@ -13,14 +13,14 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
   const txt = book.formats["text/plain; charset=utf-8"] ?? book.formats["text/plain"] ?? null;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
+    <main className="mx-auto max-w-5xl px-3 sm:px-4 py-6 sm:py-10">
       <div className="flex items-center justify-between">
-        <Link href="/books" className="text-sm text-zinc-300 hover:text-white">← Back</Link>
-        <div className="text-xs text-zinc-500">ID {book.id} · downloads {book.download_count}</div>
+        <Link href="/books" className="pressable inline-flex items-center gap-1.5 text-xs sm:text-sm text-zinc-300 hover:text-white">← Back to catalog</Link>
+        <div className="text-xs text-zinc-500">ID {book.id} · {book.download_count?.toLocaleString()} downloads</div>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-[240px_1fr]">
-        <div className="overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
+      <div className="mt-6 sm:mt-8 grid gap-6 sm:gap-8 md:grid-cols-[240px_1fr]">
+        <div className="interactive-cover mx-auto max-w-[180px] sm:max-w-[220px] md:max-w-none w-full overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 shadow-2xl">
           <div className="aspect-[2/3] bg-black/40">
             {cover ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -32,24 +32,26 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">{book.title}</h1>
-          <div className="mt-2 text-sm text-zinc-300">
-            By {book.authors?.length ? book.authors.map((a) => a.name).join(", ") : "Unknown"}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">{book.title}</h1>
+          <div className="mt-2 text-sm sm:text-base text-zinc-300">
+            By <span className="font-medium text-white">{book.authors?.length ? book.authors.map((a) => a.name).join(", ") : "Unknown"}</span>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <Link href={`/read/${book.id}`} className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            <Link href={`/read/${book.id}`} className="pressable flex-1 sm:flex-none justify-center min-h-[44px] inline-flex items-center rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600">
               Read in app
             </Link>
-            <FavoriteStar bookKey={`gutendex:${String(book.id)}`} />
-            <AddToListButton bookKey={`gutendex:${String(book.id)}`} />
+            <div className="flex items-center gap-2">
+              <FavoriteStar bookKey={`gutendex:${String(book.id)}`} />
+              <AddToListButton bookKey={`gutendex:${String(book.id)}`} />
+            </div>
             {epub ? (
-              <a href={epub} className="rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15" target="_blank" rel="noreferrer">
+              <a href={epub} className="pressable min-h-[44px] inline-flex items-center rounded-xl bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15" target="_blank" rel="noreferrer">
                 Download EPUB
               </a>
             ) : null}
             {txt ? (
-              <a href={txt} className="rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15" target="_blank" rel="noreferrer">
+              <a href={txt} className="pressable min-h-[44px] inline-flex items-center rounded-xl bg-white/10 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15" target="_blank" rel="noreferrer">
                 Download TXT
               </a>
             ) : null}

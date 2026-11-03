@@ -45,6 +45,7 @@ export function Reader({ id }: { id: string }) {
   const [fontSize, setFontSize] = useState(18);
   const [lineHeight, setLineHeight] = useState(1.75);
   const [pageIndex, setPageIndex] = useState(0);
+  const [typeOpen, setTypeOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,58 +328,107 @@ export function Reader({ id }: { id: string }) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={`/book/${id}`} className="text-sm text-zinc-300 hover:text-white">
-          ← Back to book
-        </Link>
-
+    <main className="mx-auto max-w-3xl px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
+          <Link href={`/book/${id}`} className="pressable min-h-[38px] inline-flex items-center text-xs sm:text-sm text-zinc-300 hover:text-white">
+            ← Book
+          </Link>
+          <Link
+            href={`/read/${id}`}
+            className="pressable rounded-md bg-white/10 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-white/15 hover:text-white"
+          >
+            EPUB
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             type="button"
-            className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15"
+            className="pressable rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 min-h-[38px]"
             onClick={() => setTocOpen(true)}
             title="Table of contents"
           >
             TOC
           </button>
-          <button className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.max(14, s - 1))}>
-            A-
-          </button>
-          <button className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.min(26, s + 1))}>
-            A+
-          </button>
-          <button className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15" onClick={() => setLineHeight((h) => Math.max(1.4, Math.round((h - 0.1) * 10) / 10))}>
-            LH-
-          </button>
-          <button className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15" onClick={() => setLineHeight((h) => Math.min(2.2, Math.round((h + 0.1) * 10) / 10))}>
-            LH+
-          </button>
+
+          {/* Mobile Display Toggle */}
+          <div className="relative sm:hidden">
+            <button
+              type="button"
+              className={
+                "pressable rounded-lg px-3 py-1.5 text-xs font-bold ring-1 transition min-h-[38px] " +
+                (typeOpen ? "bg-white/20 text-white ring-white/30" : "bg-white/10 text-white ring-white/10 hover:bg-white/15")
+              }
+              onClick={() => setTypeOpen((v) => !v)}
+              title="Typography options"
+            >
+              Aa
+            </button>
+            {typeOpen ? (
+              <div className="origin-top-popover absolute right-0 top-[calc(100%+8px)] z-40 w-56 rounded-xl bg-zinc-950 p-3 ring-1 ring-white/15 shadow-2xl">
+                <div className="text-[11px] font-semibold text-zinc-400 mb-1.5">Font Size: {fontSize}px</div>
+                <div className="flex items-center gap-2 mb-3">
+                  <button className="pressable flex-1 rounded bg-white/10 py-1.5 text-xs font-bold text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.max(14, s - 1))}>
+                    A-
+                  </button>
+                  <button className="pressable flex-1 rounded bg-white/10 py-1.5 text-xs font-bold text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.min(26, s + 1))}>
+                    A+
+                  </button>
+                </div>
+                <div className="text-[11px] font-semibold text-zinc-400 mb-1.5">Line Height: {lineHeight}</div>
+                <div className="flex items-center gap-2">
+                  <button className="pressable flex-1 rounded bg-white/10 py-1.5 text-xs font-bold text-white hover:bg-white/15" onClick={() => setLineHeight((h) => Math.max(1.4, Math.round((h - 0.1) * 10) / 10))}>
+                    LH-
+                  </button>
+                  <button className="pressable flex-1 rounded bg-white/10 py-1.5 text-xs font-bold text-white hover:bg-white/15" onClick={() => setLineHeight((h) => Math.min(2.2, Math.round((h + 0.1) * 10) / 10))}>
+                    LH+
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Desktop inline typography buttons */}
+          <div className="hidden sm:flex items-center gap-1.5">
+            <button className="pressable rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.max(14, s - 1))}>
+              A-
+            </button>
+            <button className="pressable rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.min(26, s + 1))}>
+              A+
+            </button>
+            <button className="pressable rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/15" onClick={() => setLineHeight((h) => Math.max(1.4, Math.round((h - 0.1) * 10) / 10))}>
+              LH-
+            </button>
+            <button className="pressable rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/15" onClick={() => setLineHeight((h) => Math.min(2.2, Math.round((h + 0.1) * 10) / 10))}>
+              LH+
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white/5 p-3 ring-1 ring-white/10">
-        <div className="flex items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/5 p-3 sm:p-3.5 ring-1 ring-white/10">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
           <button
-            className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15 disabled:opacity-40"
+            className="pressable min-h-[44px] flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/15 disabled:opacity-30 disabled:pointer-events-none"
             onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
             disabled={pageIndex <= 0}
           >
-            ← Prev page
+            ← Prev
           </button>
           <button
-            className="rounded-md bg-brand-500 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-40"
+            className="pressable min-h-[44px] flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-30 disabled:pointer-events-none shadow-sm"
             onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
             disabled={pageIndex >= totalPages - 1}
           >
-            Next page →
+            Next →
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-sm text-zinc-300">
+        <div className="flex items-center justify-center sm:justify-end gap-2 text-sm text-zinc-300 w-full sm:w-auto">
           <span>Page</span>
           <input
-            className="h-9 w-20 rounded-md bg-black/40 px-2 text-sm text-white ring-1 ring-white/10"
+            className="h-9 w-20 rounded-md bg-black/40 px-2 text-sm text-white ring-1 ring-white/10 text-center"
             value={totalPages ? pageIndex + 1 : 0}
             onChange={(e) => {
               const n = Number(e.target.value);
@@ -392,32 +442,32 @@ export function Reader({ id }: { id: string }) {
 
       {/* TOC overlay */}
       {tocOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/70 p-4 backdrop-blur-sm" onClick={() => setTocOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md" onClick={() => setTocOpen(false)}>
           <div
-            className="mx-auto max-w-2xl rounded-xl bg-black p-4 ring-1 ring-white/10"
+            className="modal-enter w-full max-w-2xl rounded-2xl bg-zinc-950 p-4 sm:p-6 ring-1 ring-white/10 shadow-2xl max-h-[85dvh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-white">Table of contents</div>
-              <button className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15" onClick={() => setTocOpen(false)}>
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4 shrink-0">
+              <div className="text-base font-semibold text-white">Table of contents</div>
+              <button className="pressable rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/15 min-h-[38px]" onClick={() => setTocOpen(false)}>
                 Close
               </button>
             </div>
 
-            <div className="mt-3 max-h-[70vh] overflow-auto">
+            <div className="mt-3 flex-1 overflow-y-auto">
               {toc.length ? (
                 <div className="divide-y divide-white/10">
                   {toc.map((it, idx) => (
                     <button
                       key={`${it.title}-${it.page}-${idx}`}
-                      className="flex w-full items-center justify-between gap-3 px-2 py-3 text-left text-sm text-zinc-200 hover:bg-white/5"
+                      className="pressable flex min-h-[44px] w-full items-center justify-between gap-3 px-3 py-3 text-left text-sm text-zinc-200 hover:bg-white/5"
                       onClick={() => {
                         setPageIndex(it.page);
                         setTocOpen(false);
                       }}
                     >
-                      <span className={"line-clamp-1 " + (it.level === 0 ? "font-semibold" : "pl-4")}>{it.title}</span>
-                      <span className="text-xs text-zinc-500">p. {it.page + 1}</span>
+                      <span className={"line-clamp-1 " + (it.level === 0 ? "font-semibold text-white" : "pl-4 text-zinc-300")}>{it.title}</span>
+                      <span className="text-xs text-zinc-500 shrink-0">p. {it.page + 1}</span>
                     </button>
                   ))}
                 </div>
@@ -429,7 +479,7 @@ export function Reader({ id }: { id: string }) {
         </div>
       ) : null}
 
-      <div className="mt-6 rounded-lg bg-white/5 p-5 ring-1 ring-white/10">
+      <div className="mt-6 rounded-xl bg-white/5 p-4 sm:p-6 ring-1 ring-white/10 overflow-hidden">
         {loading ? (
           <div className="text-sm text-zinc-400">Loading…</div>
         ) : error ? (

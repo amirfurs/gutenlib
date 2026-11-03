@@ -161,7 +161,7 @@ export function LibraryClient({ scope }: { scope: LibraryScope }) {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-1">
+      <div className="mt-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {tabs.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -169,13 +169,13 @@ export function LibraryClient({ scope }: { scope: LibraryScope }) {
             <button
               key={t.id}
               className={
-                "shrink-0 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ring-1 transition " +
+                "pressable shrink-0 inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold ring-1 transition min-h-[40px] " +
                 (active ? "bg-brand-500 text-white ring-brand-500/40" : "bg-white/5 text-zinc-200 ring-white/10 hover:bg-white/10")
               }
               onClick={() => setTab(t.id)}
             >
               <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{t.label}</span>
+              <span>{t.label}</span>
             </button>
           );
         })}

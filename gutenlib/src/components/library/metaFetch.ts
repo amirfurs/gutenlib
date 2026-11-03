@@ -1,5 +1,8 @@
 import { ablAuthors, ablThumbnailUrl } from "@/lib/abl/helpers";
-import { getCoverUrl } from "@/lib/gutendex";
+
+export function getCoverUrl(formats: Record<string, string>): string | null {
+  return formats["image/jpeg"] ?? null;
+}
 
 export async function fetchAblMeta(ablId: string, signal?: AbortSignal) {
   const r = await fetch(`/api/abl/book/${ablId}?lang=ar`, { signal });

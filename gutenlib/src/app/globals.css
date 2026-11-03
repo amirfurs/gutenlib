@@ -1,7 +1,18 @@
 @import "tailwindcss";
+@import "../components/voice/voice.css";
 
 :root {
   color-scheme: dark;
+
+  /* Emil Kowalski Animation Easing Curves */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Surface colors */
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --surface-border-hover: rgba(255, 255, 255, 0.16);
+  --surface-panel: rgba(18, 18, 22, 0.72);
 }
 
 html, body {
@@ -11,18 +22,133 @@ html, body {
 body {
   background: #000;
   color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Background aurora */
+/* Background ambient aurora */
 .bg-aurora {
   background:
-    radial-gradient(900px 420px at 15% -10%, rgba(229, 9, 20, 0.22), transparent 60%),
-    radial-gradient(700px 360px at 85% 0%, rgba(255, 255, 255, 0.08), transparent 55%),
-    radial-gradient(800px 520px at 60% 110%, rgba(229, 9, 20, 0.10), transparent 60%),
+    radial-gradient(900px 420px at 15% -10%, rgba(229, 9, 20, 0.18), transparent 60%),
+    radial-gradient(700px 360px at 85% 0%, rgba(255, 255, 255, 0.06), transparent 55%),
+    radial-gradient(800px 520px at 60% 110%, rgba(229, 9, 20, 0.08), transparent 60%),
     linear-gradient(to bottom, rgba(0,0,0,0.92), rgba(0,0,0,0.98));
 }
 
-/* small, nice scrollbar */
-*::-webkit-scrollbar { height: 10px; width: 10px; }
-*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
-*::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+/* Tactile micro-interactions (Emil Kowalski Component Principles) */
+.pressable {
+  transition: transform 160ms var(--ease-out), background-color 160ms ease, opacity 160ms ease, border-color 160ms ease;
+  will-change: transform;
+}
+
+.pressable:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Fine-pointer hover gating to prevent sticky hovers on touch taps */
+@media (hover: hover) and (pointer: fine) {
+  .interactive-card {
+    transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-color 200ms ease;
+    will-change: transform;
+  }
+  .interactive-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.7);
+    border-color: var(--surface-border-hover);
+  }
+
+  .interactive-cover {
+    transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out);
+    will-change: transform;
+  }
+  .interactive-cover:hover {
+    transform: scale(1.02) translateY(-3px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.85);
+  }
+}
+
+/* Stagger animation entries for natural cascading */
+.stagger-enter {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: staggerFadeIn 280ms var(--ease-out) forwards;
+}
+
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 40ms; }
+.stagger-3 { animation-delay: 80ms; }
+.stagger-4 { animation-delay: 120ms; }
+
+@keyframes staggerFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Origin-aware popover animation */
+.origin-top-popover {
+  transform-origin: top;
+  animation: popoverFadeIn 180ms var(--ease-out) forwards;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Modal centered scale animation (never scale from 0) */
+.modal-enter {
+  transform-origin: center;
+  animation: modalScaleIn 200ms var(--ease-out) forwards;
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Minimal refined scrollbar */
+*::-webkit-scrollbar { height: 8px; width: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Hide scrollbar on touch momentum scroll lists */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Safe-area inset utilities for notched phones and home indicators */
+.pb-safe { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+.pt-safe { padding-top: max(16px, env(safe-area-inset-top)); }
+
+/* Accessibility: respect user preferences for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:active {
+    transform: none !important;
+  }
+  .interactive-card:hover,
+  .interactive-cover:hover {
+    transform: none !important;
+  }
+}

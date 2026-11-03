@@ -102,10 +102,10 @@ export function SearchBar() {
   if (hide) return null;
 
   return (
-    <div ref={wrapRef} className="relative w-[min(640px,62vw)]">
+    <div ref={wrapRef} className="relative flex-1 max-w-[480px] sm:max-w-[640px] ml-auto">
       <div className="flex items-center gap-2">
         <div className="relative w-full">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <Search className="pointer-events-none absolute left-2.5 sm:left-3 top-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 text-zinc-500" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -118,21 +118,21 @@ export function SearchBar() {
               if (e.key === "Escape") setOpen(false);
             }}
             placeholder={inArabic ? "ابحث في الكتب العربية…" : "Search books / authors / topics…"}
-            className="h-10 w-full rounded-md bg-white/5 pl-10 pr-3 text-sm text-white ring-1 ring-white/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-brand-500/50"
+            className="h-9 sm:h-10 w-full rounded-md bg-white/5 pl-8 sm:pl-10 pr-3 text-xs sm:text-sm text-white ring-1 ring-white/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-brand-500/50"
           />
         </div>
         <button
           type="button"
           onClick={submit}
-          className="hidden h-10 rounded-md bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600 sm:inline-flex"
+          className="pressable hidden h-10 items-center justify-center rounded-md bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600 sm:inline-flex shrink-0"
         >
           Search
         </button>
       </div>
 
       {open ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
-          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
+        <div className="origin-top-popover absolute right-0 top-[calc(100%+8px)] z-50 w-[min(92vw,540px)] sm:w-full overflow-hidden rounded-xl bg-zinc-950/95 ring-1 ring-white/10 shadow-2xl backdrop-blur-xl max-h-[60dvh] flex flex-col">
+          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2 shrink-0">
             <div className="text-xs text-zinc-400">{loading ? "Searching…" : trimmed ? "Suggestions" : ""}</div>
             {trimmed ? (
               <Link href={actionHref} className="text-xs text-zinc-300 hover:text-white" onClick={() => setOpen(false)}>
@@ -144,7 +144,7 @@ export function SearchBar() {
           {!trimmed ? (
             <div className="px-3 py-4 text-sm text-zinc-400">Type to search…</div>
           ) : (
-            <div className="max-h-[420px] overflow-auto">
+            <div className="overflow-y-auto flex-1">
               {/* Books first */}
               <div className="px-3 pt-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{inArabic ? "الكتب" : "Books"}</div>
               <div className="p-2">
@@ -154,18 +154,18 @@ export function SearchBar() {
                       <Link
                         key={b.id}
                         href={inArabic ? `/ar/book/${b.id}` : `/book/${b.id}`}
-                        className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5"
+                        className="pressable flex min-h-[44px] items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5"
                         onClick={() => setOpen(false)}
                       >
-                        <div className="h-10 w-7 overflow-hidden rounded bg-white/5 ring-1 ring-white/10">
+                        <div className="h-10 w-7 shrink-0 overflow-hidden rounded bg-white/5 ring-1 ring-white/10">
                           {b.cover ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={b.cover} alt="" className="h-full w-full object-cover" />
                           ) : null}
                         </div>
                         <div className="min-w-0">
-                          <div className="line-clamp-1 text-sm text-white">{b.title}</div>
-                          <div className="line-clamp-1 text-xs text-zinc-400">{b.author}</div>
+                          <div className="line-clamp-1 text-xs sm:text-sm text-white">{b.title}</div>
+                          <div className="line-clamp-1 text-[11px] sm:text-xs text-zinc-400">{b.author}</div>
                         </div>
                       </Link>
                     ))}
@@ -186,7 +186,7 @@ export function SearchBar() {
                           <Link
                             key={name}
                             href={`/author?name=${encodeURIComponent(name)}`}
-                            className="rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                            className="flex min-h-[44px] items-center rounded-lg px-2 py-2 text-xs sm:text-sm text-zinc-200 hover:bg-white/5"
                             onClick={() => setOpen(false)}
                           >
                             {name}
@@ -207,7 +207,7 @@ export function SearchBar() {
                           <Link
                             key={t}
                             href={`/books?${new URLSearchParams({ sort: "popular", topic: t }).toString()}`}
-                            className="rounded-lg px-2 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                            className="flex min-h-[44px] items-center rounded-lg px-2 py-2 text-xs sm:text-sm text-zinc-200 hover:bg-white/5"
                             onClick={() => setOpen(false)}
                           >
                             {t}

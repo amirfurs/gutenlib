@@ -25,8 +25,8 @@ export function ArabicBooksFilters({
   useEffect(() => {
     const term = author.trim();
     if (term.length < 2) {
-      setAuthorSug([]);
-      return;
+      const resetTimer = setTimeout(() => setAuthorSug([]), 0);
+      return () => clearTimeout(resetTimer);
     }
     const t = setTimeout(async () => {
       try {

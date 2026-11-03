@@ -26,14 +26,14 @@ export default async function ArabicBookPage({ params }: { params: Promise<{ id:
   const pdf = ablPdfUrl(book);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
+    <main className="mx-auto max-w-5xl px-3 sm:px-4 py-6 sm:py-10">
       <div className="flex items-center justify-between">
-        <Link href="/ar/books" className="text-sm text-zinc-300 hover:text-white">← رجوع</Link>
+        <Link href="/ar/books" className="text-xs sm:text-sm text-zinc-300 hover:text-white">← رجوع</Link>
         <div className="text-xs text-zinc-500">ID {book.id}</div>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-[240px_1fr]">
-        <div className="overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10">
+      <div className="mt-6 sm:mt-8 grid gap-6 sm:gap-8 md:grid-cols-[240px_1fr]">
+        <div className="mx-auto max-w-[180px] sm:max-w-[220px] md:max-w-none w-full overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 shadow-2xl">
           <div className="aspect-[2/3] bg-black/40">
             {cover ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -49,21 +49,23 @@ export default async function ArabicBookPage({ params }: { params: Promise<{ id:
         </div>
 
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">{book.title}</h1>
-          <div className="mt-2 text-sm text-zinc-300">{ablAuthors(book)}</div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">{book.title}</h1>
+          <div className="mt-2 text-sm sm:text-base text-zinc-300">{ablAuthors(book)}</div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <Link href={`/ar/read/${book.id}`} className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+            <Link href={`/ar/read/${book.id}`} className="pressable flex-1 sm:flex-none justify-center min-h-[44px] inline-flex items-center rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-600">
               اقرأ داخل الموقع
             </Link>
-            <FavoriteStar bookKey={`abl:${String(book.id)}`} />
-            <AddToListButton bookKey={`abl:${String(book.id)}`} />
+            <div className="flex items-center gap-2">
+              <FavoriteStar bookKey={`abl:${String(book.id)}`} />
+              <AddToListButton bookKey={`abl:${String(book.id)}`} />
+            </div>
             {pdf ? (
-              <a href={pdf} target="_blank" rel="noreferrer" className="rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
+              <a href={pdf} target="_blank" rel="noreferrer" className="pressable min-h-[44px] inline-flex items-center rounded-xl bg-white/10 px-4 py-2 text-xs sm:text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15">
                 تحميل PDF
               </a>
             ) : null}
-            <Link href="/books" className="rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15">
+            <Link href="/books" className="pressable min-h-[44px] inline-flex items-center rounded-xl bg-white/10 px-4 py-2 text-xs sm:text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15">
               قسم Gutenberg
             </Link>
           </div>

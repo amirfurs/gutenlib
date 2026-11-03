@@ -185,9 +185,9 @@ export async function importBackup(data: BackupV1, scope?: LibraryScope): Promis
   const incoming = data.library;
   let favIn = incoming?.favorites ?? [];
   let listsIn = (incoming?.lists ?? []) as any[];
-  let itemsIn = incoming?.listItems ?? [];
+  const itemsIn = incoming?.listItems ?? [];
   let notesIn = (incoming?.notes ?? []) as any[];
-  let daysIn = incoming?.readingDays ?? [];
+  const daysIn = incoming?.readingDays ?? [];
 
   if (scope) {
     favIn = favIn.filter((r) => (scope === "arabic" ? r.bookKey.startsWith("abl:") : r.bookKey.startsWith("gutendex:")));

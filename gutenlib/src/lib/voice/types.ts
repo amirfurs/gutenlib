@@ -24,6 +24,7 @@ export type PeerInfo = {
   displayName: string;
   role: VoiceRole;
   handRaised?: boolean;
+  micOn?: boolean;
 };
 
 export type ReadingState =
@@ -40,4 +41,9 @@ export type JoinedPayload = {
   reading?: ReadingState;
   peers: PeerInfo[];
   expiresAt: number;
+  handRaised?: boolean;
+  highlight?: { text: string } | null;
 };
+
+export type ChatMessage = { id: string; peerId: string; name: string; text: string; ts: number };
+export type SessionPhase = "idle" | "joining" | "connected" | "reconnecting" | "left" | "ended" | "error";

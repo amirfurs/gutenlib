@@ -2,10 +2,12 @@ import http from "http";
 import { Server } from "socket.io";
 import { nanoid } from "nanoid";
 import dotenv from "dotenv";
+import { timingSafeEqual } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 // Load env from Next's .env.local so phone-on-LAN works for the signaling server too.
 try {
-  dotenv.config({ path: new URL("../.env.local", import.meta.url) });
+  dotenv.config({ path: new URL("../.env.local", import.meta.url), quiet: true });
 } catch {
   // ignore
 }
@@ -24,13 +26,23 @@ function isAllowedOrigin(reqOrigin) {
   if (!reqOrigin) return true;
   if (ORIGINS.includes(reqOrigin)) return true;
 
-  // Allow Vercel production/preview links for this app family.
   try {
-    const u = new URL(reqOrigin);
-    const h = u.hostname.toLowerCase();
-    if (h.endsWith(".vercel.app") && h.includes("gutenlib")) return true;
+    const url = new URL(reqOrigin);
+    const host = url.hostname;
+    // Allow local development and LAN access
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      host.endsWith(".local") ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+    ) {
+      return true;
+    }
   } catch {
-    // ignore parse errors
+    // ignore
   }
 
   return false;
@@ -49,6 +61,20 @@ function getAllowOrigin(reqOrigin) {
  * For production you likely want Redis.
  */
 const rooms = new Map();
+const creationLimits = new Map();
+const equalSecret = (a, b) => typeof a === "string" && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+const HOST_GRACE_MS = Number(process.env.VOICE_HOST_GRACE_MS || 60_000);
+const ROOM_TTL_MS = Number(process.env.VOICE_ROOM_TTL_MS || 7_200_000);
+
+function endRoom(room, reason) {
+  if (!rooms.has(room.inviteToken)) return;
+  clearTimeout(room.hostGraceTimer);
+  clearTimeout(room.expiryTimer);
+  for (const p of room.participants.values()) clearTimeout(p.disconnectTimer);
+  rooms.delete(room.inviteToken);
+  io.to(room.inviteToken).emit("room-ended", { reason, summary: buildRoomSummary(room) });
+  io.in(room.inviteToken).disconnectSockets(true);
+}
 
 function now() {
   return Date.now();
@@ -63,7 +89,7 @@ function makeRoom() {
     roomName: "",
     hostDisplayName: "",
     createdAt: now(),
-    expiresAt: now() + 2 * 60 * 60 * 1000, // 2h hard expiry
+    expiresAt: now() + ROOM_TTL_MS,
     hostPeerId: null,
     hostGraceTimer: null,
     activeBook: null, // { id, title, author, coverUrl }
@@ -73,8 +99,11 @@ function makeRoom() {
     maxParticipants: 0,
     highlight: null, // { text, by, ts }
     readingTrail: { kind: "chunk", seen: [0] },
+    banned: new Set(),
   };
   rooms.set(inviteToken, room);
+  room.expiryTimer = setTimeout(() => endRoom(room, "ROOM_EXPIRED"), ROOM_TTL_MS);
+  room.expiryTimer.unref();
   return room;
 }
 
@@ -83,7 +112,7 @@ function cleanupRoomIfNeeded(room) {
   // Only count connected participants (socketId != null)
   const connectedCount = Array.from(room.participants.values()).filter((p) => p.socketId).length;
   const expired = now() > room.expiresAt;
-  if (connectedCount === 0 || expired) {
+  if ((connectedCount === 0 && room.participants.size === 0) || expired) {
     rooms.delete(room.inviteToken);
   }
 }
@@ -104,11 +133,24 @@ function buildRoomSummary(room) {
 }
 
 const server = http.createServer((req, res) => {
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Cache-Control", "no-store");
+  if (!isAllowedOrigin(req.headers.origin)) {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "ORIGIN_NOT_ALLOWED" }));
+    return;
+  }
   // Minimal REST endpoints for room creation & status
   if (req.method === "POST" && req.url === "/rooms") {
     let raw = "";
-    req.on("data", (c) => (raw += c));
+    let tooLarge = false;
+    req.on("data", (c) => {
+      if (tooLarge) return;
+      raw += c;
+      if (Buffer.byteLength(raw) > 4096) { tooLarge = true; res.writeHead(413); res.end(); }
+    });
     req.on("end", () => {
+      if (tooLarge) return;
       let payload = {};
       try {
         payload = raw ? JSON.parse(raw) : {};
@@ -116,9 +158,22 @@ const server = http.createServer((req, res) => {
         payload = {};
       }
 
+      const roomName = typeof payload?.roomName === "string" ? payload.roomName : "";
+      const hostDisplayName = typeof payload?.hostDisplayName === "string" ? payload.hostDisplayName : "";
+      if (!roomName.trim() || !hostDisplayName.trim() || roomName.length > 60 || hostDisplayName.length > 32) {
+        res.writeHead(400, { "Content-Type": "application/json", "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin) });
+        res.end(JSON.stringify({ ok: false, error: "INVALID_ROOM" }));
+        return;
+      }
+      const ip = req.socket.remoteAddress;
+      for (const [key, entry] of creationLimits) if (now() - entry.start > 60_000) creationLimits.delete(key);
+      const limit = creationLimits.get(ip) ?? { start: now(), count: 0 };
+      if (++limit.count > 20 || rooms.size >= 1000) {
+        res.writeHead(429, { "Content-Type": "application/json", "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin) });
+        res.end(JSON.stringify({ error: "RATE_LIMITED" })); return;
+      }
+      creationLimits.set(ip, limit);
       const room = makeRoom();
-      const roomName = typeof payload.roomName === "string" ? payload.roomName : "";
-      const hostDisplayName = typeof payload.hostDisplayName === "string" ? payload.hostDisplayName : "";
       room.roomName = roomName.slice(0, 60);
       room.hostDisplayName = hostDisplayName.slice(0, 32);
 
@@ -144,7 +199,8 @@ const server = http.createServer((req, res) => {
   if (req.method === "GET" && req.url?.startsWith("/rooms/")) {
     const token = req.url.split("/")[2];
     const room = rooms.get(token);
-    if (!room) {
+    if (!room || now() > room.expiresAt) {
+      if (room) endRoom(room, "ROOM_EXPIRED");
       res.writeHead(404, { "Content-Type": "application/json", "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin) });
       res.end(JSON.stringify({ ok: false, error: "ROOM_NOT_FOUND" }));
       return;
@@ -156,7 +212,7 @@ const server = http.createServer((req, res) => {
       roomName: room.roomName,
       activeBook: room.activeBook,
       reading: room.reading,
-      participants: room.participants.size,
+      participants: Array.from(room.participants.values()).filter((p) => p.socketId).length,
       hostPeerId: room.hostPeerId,
       expiresAt: room.expiresAt,
     }));
@@ -178,6 +234,8 @@ const server = http.createServer((req, res) => {
 });
 
 const io = new Server(server, {
+  maxHttpBufferSize: 64 * 1024,
+  allowRequest: (req, cb) => cb(null, isAllowedOrigin(req.headers.origin)),
   cors: {
     origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     methods: ["GET", "POST"],
@@ -185,7 +243,22 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join-room", ({ inviteToken, displayName, hostSecret, clientId }) => {
+  // Reject malformed payloads before handlers destructure them. Never buffer
+  // state changes from a replaced socket or from a deleted room.
+  socket.use(([event, payload], next) => {
+    const objectEvents = ["join-room", "chat-send", "mic-state", "webrtc-offer", "webrtc-answer", "webrtc-ice"];
+    if ((objectEvents.includes(event) || event.startsWith("host-")) && (!payload || typeof payload !== "object" || Array.isArray(payload))) {
+      socket.emit(event === "join-room" ? "join-error" : "control-error", { error: "INVALID_PAYLOAD" });
+      return;
+    }
+    if (event !== "join-room") {
+      const p = rooms.get(socket.data.inviteToken)?.participants.get(socket.data.peerId);
+      if (!p || p.socketId !== socket.id) return;
+    }
+    next();
+  });
+  socket.on("join-room", (payload = {}) => {
+    const { inviteToken, displayName, hostSecret, clientId } = payload;
     const room = rooms.get(inviteToken);
     if (!room) {
       socket.emit("join-error", { error: "ROOM_NOT_FOUND" });
@@ -194,16 +267,37 @@ io.on("connection", (socket) => {
 
     // basic expiry
     if (now() > room.expiresAt) {
-      rooms.delete(inviteToken);
+      endRoom(room, "ROOM_EXPIRED");
       socket.emit("join-error", { error: "ROOM_EXPIRED" });
       return;
     }
 
-    const cid = typeof clientId === "string" && clientId.trim() ? clientId.slice(0, 32) : nanoid(10);
-    const peerId = cid; // stable id per browser+room
+    if (typeof displayName !== "string" || !displayName.trim() || displayName.length > 32) {
+      socket.emit("join-error", { error: "INVALID_NAME" });
+      return;
+    }
+    const cid = typeof clientId === "string" && /^[a-zA-Z0-9_-]{8,64}$/.test(clientId) ? clientId : nanoid(16);
+    if (socket.data.inviteToken && socket.data.inviteToken !== inviteToken) {
+      socket.emit("join-error", { error: "ALREADY_JOINED" }); return;
+    }
+    const isHostRejoin = equalSecret(hostSecret, room.hostSecret);
+    if (hostSecret && !isHostRejoin) { socket.emit("join-error", { error: "HOST_AUTH_REQUIRED" }); return; }
+    if (room.banned.has(cid)) { socket.emit("join-error", { error: "KICKED" }); return; }
+    const prior = isHostRejoin && room.hostPeerId ? room.participants.get(room.hostPeerId) : Array.from(room.participants.values()).find((p) => p.clientId === cid);
+    const peerId = prior?.peerId ?? nanoid(16);
 
-    const isFirst = room.participants.size === 0;
-    const isHostRejoin = typeof hostSecret === "string" && hostSecret === room.hostSecret;
+    if (!room.hostPeerId && !isHostRejoin) {
+      socket.emit("join-error", { error: "HOST_NOT_CONNECTED" });
+      return;
+    }
+    const previous = room.participants.get(peerId);
+    if (!previous?.socketId && Array.from(room.participants.values()).filter(p => p.socketId).length >= 8 && !isHostRejoin) {
+      socket.emit("join-error", { error: "ROOM_FULL" }); return;
+    }
+    if (previous?.role === "host" && !isHostRejoin) {
+      socket.emit("join-error", { error: "HOST_AUTH_REQUIRED" });
+      return;
+    }
 
     // if this peerId is already connected from another tab, replace it
     const existingSocketId = room.participants.get(peerId)?.socketId;
@@ -213,7 +307,7 @@ io.on("connection", (socket) => {
       oldSocket?.disconnect(true);
     }
 
-    const role = isHostRejoin ? "host" : isFirst ? "host" : (room.participants.get(peerId)?.role ?? "listener");
+    const role = isHostRejoin ? "host" : (previous?.role ?? "listener");
 
     if (role === "host") {
       room.hostPeerId = peerId;
@@ -229,6 +323,7 @@ io.on("connection", (socket) => {
       socketId: socket.id,
       displayName: String(displayName || (room.participants.get(peerId)?.displayName ?? "Guest")).slice(0, 32),
       role,
+      micOn: false,
       handRaised: room.participants.get(peerId)?.handRaised ?? false,
       disconnectTimer: null,
     };
@@ -248,14 +343,15 @@ io.on("connection", (socket) => {
 
     // Send current peer list to the joiner
     const peers = Array.from(room.participants.values())
-      .filter((p) => p.peerId !== peerId)
-      .map((p) => ({ peerId: p.peerId, displayName: p.displayName, role: p.role, handRaised: !!p.handRaised }));
+      .filter((p) => p.peerId !== peerId && p.socketId)
+      .map((p) => ({ peerId: p.peerId, displayName: p.displayName, role: p.role, handRaised: !!p.handRaised, micOn: !!p.micOn }));
 
     socket.emit("joined", {
       roomId: inviteToken,
       selfPeerId: peerId,
       role,
       hostPeerId: room.hostPeerId,
+      handRaised: participant.handRaised,
       roomName: room.roomName,
       activeBook: room.activeBook,
       reading: room.reading,
@@ -276,31 +372,30 @@ io.on("connection", (socket) => {
     }
 
     if (role === "host") {
-      io.to(inviteToken).emit("host-updated", { hostPeerId: room.hostPeerId });
+      io.to(inviteToken).emit("host-updated", { hostPeerId: room.hostPeerId, connected: true });
     }
   });
 
   // WebRTC signaling relay
-  socket.on("webrtc-offer", ({ toPeerId, sdp }) => {
+  function relay(event, payload) {
     const inviteToken = socket.data.inviteToken;
     if (!inviteToken) return;
-    io.to(inviteToken).emit("webrtc-offer", { fromPeerId: socket.data.peerId, toPeerId, sdp });
-  });
-
-  socket.on("webrtc-answer", ({ toPeerId, sdp }) => {
-    const inviteToken = socket.data.inviteToken;
-    if (!inviteToken) return;
-    io.to(inviteToken).emit("webrtc-answer", { fromPeerId: socket.data.peerId, toPeerId, sdp });
-  });
-
-  socket.on("webrtc-ice", ({ toPeerId, candidate }) => {
-    const inviteToken = socket.data.inviteToken;
-    if (!inviteToken) return;
-    io.to(inviteToken).emit("webrtc-ice", { fromPeerId: socket.data.peerId, toPeerId, candidate });
-  });
+    const room = rooms.get(inviteToken);
+    const sender = room?.participants.get(socket.data.peerId);
+    const target = room?.participants.get(payload?.toPeerId);
+    if (!sender || sender.socketId !== socket.id || !target?.socketId || target.peerId === sender.peerId) return;
+    if (event === "webrtc-offer" && (!payload.sdp || payload.sdp.type !== "offer" || typeof payload.sdp.sdp !== "string")) return;
+    if (event === "webrtc-answer" && (!payload.sdp || payload.sdp.type !== "answer" || typeof payload.sdp.sdp !== "string")) return;
+    if (event === "webrtc-ice" && !payload.candidate?.candidate) return;
+    io.to(target.socketId).emit(event, { fromPeerId: sender.peerId, ...(event === "webrtc-ice" ? { candidate: payload.candidate } : { sdp: payload.sdp }) });
+  }
+  socket.on("webrtc-offer", (payload) => relay("webrtc-offer", payload));
+  socket.on("webrtc-answer", (payload) => relay("webrtc-answer", payload));
+  socket.on("webrtc-ice", (payload) => relay("webrtc-ice", payload));
 
   // Chat
-  socket.on("chat-send", ({ text }) => {
+  socket.on("chat-send", ({ text }, ack) => {
+    const reject = (error) => { if (typeof ack === "function") ack({ ok: false, error }); };
     const inviteToken = socket.data.inviteToken;
     const peerId = socket.data.peerId;
     if (!inviteToken || !peerId) return;
@@ -312,14 +407,14 @@ io.on("connection", (socket) => {
     if (!p) return;
 
     const t = String(text ?? "").trim();
-    if (!t) return;
+    if (!t) return reject("INVALID_MESSAGE");
 
     // basic limits
-    if (t.length > 400) return;
+    if (t.length > 400 || typeof text !== "string") return reject("INVALID_MESSAGE");
 
     const nowTs = Date.now();
     const last = socket.data.lastChatAt ?? 0;
-    if (nowTs - last < 350) return; // rate limit
+    if (nowTs - last < 350) return reject("RATE_LIMITED");
     socket.data.lastChatAt = nowTs;
 
     const msg = {
@@ -334,6 +429,15 @@ io.on("connection", (socket) => {
     if (room.messages.length > 300) room.messages.splice(0, room.messages.length - 300);
 
     io.to(inviteToken).emit("chat-message", msg);
+    if (typeof ack === "function") ack({ ok: true });
+  });
+
+  socket.on("mic-state", ({ micOn }) => {
+    const room = rooms.get(socket.data.inviteToken);
+    const p = room?.participants.get(socket.data.peerId);
+    if (!p) return;
+    p.micOn = p.role !== "listener" && micOn === true;
+    io.to(room.inviteToken).emit("mic-updated", { peerId: p.peerId, micOn: p.micOn });
   });
 
   // Mic request controls
@@ -390,12 +494,12 @@ io.on("connection", (socket) => {
     const idRaw = book?.id;
     const id = source === "abl" ? String(idRaw ?? "").trim() : Number(idRaw);
     if (source === "abl") {
-      if (!id) {
+      if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) {
         socket.emit("control-error", { error: "BAD_BOOK" });
         return;
       }
     } else {
-      if (!Number.isFinite(id) || id <= 0) {
+      if (!Number.isSafeInteger(id) || id <= 0) {
         socket.emit("control-error", { error: "BAD_BOOK" });
         return;
       }
@@ -451,7 +555,7 @@ io.on("connection", (socket) => {
     }
 
     const idx = Number(chunkIndex);
-    if (!Number.isFinite(idx) || idx < 0) {
+    if (!room.activeBook || room.activeBook.source !== "gutendex" || !Number.isSafeInteger(idx) || idx < 0 || idx > 100000) {
       socket.emit("control-error", { error: "BAD_CHUNK" });
       return;
     }
@@ -476,7 +580,7 @@ io.on("connection", (socket) => {
     }
 
     const idx = Number(page);
-    if (!Number.isFinite(idx) || idx < 1) {
+    if (!room.activeBook || room.activeBook.source !== "abl" || !Number.isSafeInteger(idx) || idx < 1 || idx > 100000) {
       socket.emit("control-error", { error: "BAD_PAGE" });
       return;
     }
@@ -562,6 +666,10 @@ io.on("connection", (socket) => {
     if (!p) return;
     if (p.role === "host") return;
     p.role = "listener";
+    p.micOn = false;
+    p.handRaised = false;
+    io.to(inviteToken).emit("mic-updated", { peerId: targetPeerId, micOn: false });
+    io.to(inviteToken).emit("hand-updated", { peerId: targetPeerId, handRaised: false });
 
     io.to(inviteToken).emit("role-updated", { peerId: targetPeerId, role: p.role });
   });
@@ -583,6 +691,9 @@ io.on("connection", (socket) => {
     if (!p) return;
     if (p.role === "host") return;
 
+    room.banned.add(p.clientId);
+    room.participants.delete(targetPeerId);
+    clearTimeout(p.disconnectTimer);
     // notify and disconnect target
     if (p.socketId) {
       const targetSocket = io.sockets.sockets.get(p.socketId);
@@ -608,8 +719,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(inviteToken).emit("room-ended", { reason: "HOST_ENDED", summary: buildRoomSummary(room) });
-    rooms.delete(inviteToken);
+    endRoom(room, "HOST_ENDED");
   });
 
   socket.on("disconnect", () => {
@@ -624,11 +734,13 @@ io.on("connection", (socket) => {
     if (!p) return;
 
     // Mark disconnected but keep participant for a short grace period to allow refresh.
+    if (p.socketId !== socket.id) return;
     p.socketId = null;
+    io.to(inviteToken).emit("peer-left", { peerId });
 
     // For host: keep hostPeerId but if host doesn't return, end room (existing logic)
     if (peerId === room.hostPeerId) {
-      io.to(inviteToken).emit("host-updated", { hostPeerId: room.hostPeerId });
+      io.to(inviteToken).emit("host-updated", { hostPeerId: room.hostPeerId, connected: false });
 
       if (room.hostGraceTimer) clearTimeout(room.hostGraceTimer);
       room.hostGraceTimer = setTimeout(() => {
@@ -636,10 +748,9 @@ io.on("connection", (socket) => {
         if (!stillThere) return;
         const host = stillThere.hostPeerId && stillThere.participants.get(stillThere.hostPeerId);
         if (!host || !host.socketId) {
-          io.to(inviteToken).emit("room-ended", { reason: "HOST_LEFT", summary: buildRoomSummary(stillThere) });
-          rooms.delete(inviteToken);
+          endRoom(stillThere, "HOST_LEFT");
         }
-      }, 60_000);
+      }, HOST_GRACE_MS);
     }
 
     if (p.disconnectTimer) clearTimeout(p.disconnectTimer);
@@ -650,14 +761,14 @@ io.on("connection", (socket) => {
       if (!cur) return;
       if (cur.socketId) return; // reconnected
 
-      stillThere.participants.delete(peerId);
-      io.to(inviteToken).emit("peer-left", { peerId });
-      cleanupRoomIfNeeded(stillThere);
+      // Retain identity/role until room expiry so a refresh cannot lose host
+      // ownership or a granted microphone. Disconnected peers are not listed.
     }, 10_000);
   });
 });
 
-server.listen(PORT, () => {
+export { server, io };
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) server.listen(PORT, () => {
   console.log(`[voice-server] listening on http://localhost:${PORT}`);
   console.log(`[voice-server] allowing origin: ${ORIGIN}`);
 });

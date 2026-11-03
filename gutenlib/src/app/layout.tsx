@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
@@ -6,6 +6,14 @@ import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
 export const metadata: Metadata = {
   title: "GutenLib",
   description: "Book library powered by Gutendex (Project Gutenberg catalog)",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,8 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AnalyticsBeacon />
         <div className="min-h-screen bg-aurora">
           <Header />
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="py-6">{children}</div>
+          <div className="mx-auto max-w-6xl px-3 sm:px-4">
+            <div className="py-4 sm:py-6">{children}</div>
           </div>
         </div>
       </body>

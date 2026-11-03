@@ -12,17 +12,37 @@ export async function GET(req: Request) {
   // English-only by default
   const languages = url.searchParams.get("languages") ?? "en";
 
-  const data = await gutendex<GutendexList>("/books", {
-    search,
-    topic,
-    sort,
-    page,
-    languages,
-  });
+  try {
+    const data = await gutendex<GutendexList>("/books", {
+      search,
+      topic,
+      sort,
+      page,
+      languages,
+    });
 
-  return NextResponse.json(data, {
-    headers: {
-      "Cache-Control": "s-maxage=600, stale-while-revalidate=3600",
-    },
-  });
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": "s-maxage=600, stale-while-revalidate=3600",
+      },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Upstream catalog temporarily unavailable";
+    return NextResponse.json(
+      {
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+        error: msg,
+        degraded: true,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
+  }
 }
