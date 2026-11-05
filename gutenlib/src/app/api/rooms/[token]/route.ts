@@ -6,6 +6,9 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
+  if (!token || !/^[a-zA-Z0-9_-]{4,64}$/.test(token)) {
+    return NextResponse.json({ ok: false, error: "INVALID_TOKEN" }, { status: 400 });
+  }
   const baseUrl = getVoiceServerUrl();
   const isLocal = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1");
   const isVercelServer = Boolean(process.env.VERCEL);

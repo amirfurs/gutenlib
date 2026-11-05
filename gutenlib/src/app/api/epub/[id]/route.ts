@@ -4,6 +4,9 @@ import { ensureIpv4, gutendex, type GutendexBook } from "@/lib/gutendex";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   await ensureIpv4();
   const { id } = await params;
+  if (!/^\d{1,9}$/.test(id)) {
+    return NextResponse.json({ error: "Invalid book ID" }, { status: 400 });
+  }
 
   // Optimized candidates: Prefer Gutenberg's official fast prebuilt EPUB first (~500KB vs 15MB+ epub3)
   const candidateUrls = [

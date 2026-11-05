@@ -47,4 +47,6 @@ next-env.d.ts
 # local backups & scratch
 /backup/
 /scratch/
+/.data/
+.data/
 .vercel_*

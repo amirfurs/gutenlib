@@ -1,17 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { getState, isoDay, prune } from "@/lib/analytics/store";
 
 export const runtime = "nodejs";
+
+const failedAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = failedAttempts.get(ip);
+  if (!entry) return false;
+  if (now > entry.resetAt) {
+    failedAttempts.delete(ip);
+    return false;
+  }
+  return entry.count >= 5;
+}
+
+function recordFailedAttempt(ip: string) {
+  const now = Date.now();
+  const entry = failedAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    failedAttempts.set(ip, { count: 1, resetAt: now + 60_000 });
+  } else {
+    entry.count += 1;
+  }
+}
+
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 function requireAdmin(req: NextRequest) {
   const token = process.env.ADMIN_TOKEN;
   if (!token) return { ok: false as const, status: 500, msg: "ADMIN_TOKEN not set" };
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (isRateLimited(ip)) {
+    return { ok: false as const, status: 429, msg: "Too many failed attempts. Try again later." };
+  }
+
   const hdr = req.headers.get("x-admin-token") || "";
   const q = req.nextUrl.searchParams.get("token") || "";
   const provided = hdr || q;
 
-  if (provided !== token) return { ok: false as const, status: 401, msg: "Unauthorized" };
+  if (!provided || !safeCompare(provided, token)) {
+    recordFailedAttempt(ip);
+    return { ok: false as const, status: 401, msg: "Unauthorized" };
+  }
+
+  failedAttempts.delete(ip);
   return { ok: true as const };
 }
 

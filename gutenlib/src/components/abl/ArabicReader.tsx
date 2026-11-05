@@ -32,6 +32,18 @@ type Saved = {
   updatedAt: number;
 };
 
+function sanitizeReaderHtml(raw: string): string {
+  if (!raw) return "";
+  return raw
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<object[\s\S]*?<\/object>/gi, "")
+    .replace(/<embed[\s\S]*?>/gi, "")
+    .replace(/<applet[\s\S]*?<\/applet>/gi, "")
+    .replace(/\s*on\w+\s*=\s*(["'][^"']*["']|[^\s>]+)/gi, "")
+    .replace(/href\s*=\s*["']\s*javascript:[^"']*["']/gi, 'href="#"');
+}
+
 function flatten(items: TocItem[], level = 0): Array<{ level: number; title: string; pageNumber?: number; pageId?: string }> {
   const out: Array<{ level: number; title: string; pageNumber?: number; pageId?: string }> = [];
   for (const it of items) {
@@ -797,8 +809,8 @@ export function ArabicReader({ id, initialPage }: { id: string; initialPage?: nu
                 whiteSpace: "pre-wrap",
               }}
             >
-              {/* We trust upstream HTML; if needed we can sanitize later */}
-              <div dangerouslySetInnerHTML={{ __html: html }} />
+              {/* Sanitized HTML to prevent XSS */}
+              <div dangerouslySetInnerHTML={{ __html: sanitizeReaderHtml(html) }} />
             </div>
           </div>
 

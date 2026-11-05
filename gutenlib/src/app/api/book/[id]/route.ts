@@ -4,6 +4,9 @@ import { fetchOfficialGutenbergBook } from "@/lib/gutenbergOfficial";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!/^\d{1,9}$/.test(id)) {
+    return NextResponse.json({ error: "Invalid book ID" }, { status: 400 });
+  }
 
   // 1. Try official Gutenberg book details (100% reliable, never blocked)
   try {

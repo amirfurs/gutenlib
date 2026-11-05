@@ -4,6 +4,9 @@ import { gutendex, getBestTextUrl, ensureIpv4, type GutendexBook, type GutendexL
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await ensureIpv4();
   const { id } = await params;
+  if (!/^\d{1,9}$/.test(id)) {
+    return NextResponse.json({ error: "Invalid book ID" }, { status: 400 });
+  }
   const url = new URL(req.url);
   const format = (url.searchParams.get("format") ?? "txt").toLowerCase();
 
