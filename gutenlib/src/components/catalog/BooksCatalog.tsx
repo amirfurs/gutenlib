@@ -97,18 +97,39 @@ export function BooksCatalog({
       if (currentLang && currentLang !== "all") qs.set("languages", currentLang);
       if (currentPage > 1) qs.set("page", String(currentPage));
 
-      // 1. Try Direct Gutendex (Client-Side has real residential/mobile IP + CORS: *)
-      const directUrl = `https://gutendex.com/books/?${qs.toString()}`;
+      // 1. Primary: High-speed App API (/api/books) powered by official Project Gutenberg (covers 79,700+ books, 250ms, no CORS/Cloudflare blocks)
+      try {
+        const proxyUrl = `/api/books?${qs.toString()}`;
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        if (res.ok) {
+          const data: GutendexList = await res.json();
+          if (Array.isArray(data.results) && data.results.length > 0) {
+            setBooks(data.results);
+            setTotalCount(data.count ?? 79737);
+            setHasNext(Boolean(data.next));
+            setHasPrev(Boolean(data.previous));
+            setIsLive(!data.degraded);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+      }
 
+      // 2. Secondary: Direct Gutendex (if reachable by client)
+      const directUrl = `https://gutendex.com/books/?${qs.toString()}`;
       try {
         const res = await fetch(directUrl, {
           headers: { Accept: "application/json" },
-          signal: typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? (AbortSignal.timeout(6000) as any) : controller.signal,
+          signal: typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? (AbortSignal.timeout(5000) as any) : controller.signal,
         });
 
         if (res.ok) {
           const data: GutendexList = await res.json();
-          if (Array.isArray(data.results)) {
+          if (Array.isArray(data.results) && data.results.length > 0) {
             setBooks(data.results);
             setTotalCount(data.count ?? 0);
             setHasNext(Boolean(data.next));
@@ -118,61 +139,11 @@ export function BooksCatalog({
             return;
           }
         }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name === "AbortError") {
-          // aborted or timed out
-        }
-      }
-
-      // 2. Try Voice Server Gutendex Proxy if configured
-      try {
-        const voiceUrl =
-          process.env.NEXT_PUBLIC_VOICE_SERVER_URL ||
-          (typeof window !== "undefined" ? localStorage.getItem("gutenlib_voice_url") : null);
-        if (voiceUrl) {
-          const proxyTarget = `${voiceUrl.replace(/\/$/, "")}/gutendex/books/?${qs.toString()}`;
-          const res = await fetch(proxyTarget, {
-            headers: { Accept: "application/json" },
-            signal: typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? (AbortSignal.timeout(6000) as any) : controller.signal,
-          });
-          if (res.ok) {
-            const data: GutendexList = await res.json();
-            if (Array.isArray(data.results) && data.results.length > 0) {
-              setBooks(data.results);
-              setTotalCount(data.count ?? 0);
-              setHasNext(Boolean(data.next));
-              setHasPrev(Boolean(data.previous));
-              setIsLive(true);
-              setLoading(false);
-              return;
-            }
-          }
-        }
       } catch {
         // Fall through
       }
 
-      // 3. Try App API Proxy (/api/books)
-      try {
-        const proxyUrl = `/api/books?${qs.toString()}`;
-        const res = await fetch(proxyUrl, { signal: controller.signal });
-        if (res.ok) {
-          const data: GutendexList = await res.json();
-          if (Array.isArray(data.results) && data.results.length > 0) {
-            setBooks(data.results);
-            setTotalCount(data.count ?? 0);
-            setHasNext(Boolean(data.next));
-            setHasPrev(Boolean(data.previous));
-            setIsLive(!data.degraded);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch {
-        // Fall through
-      }
-
-      // 4. Fallback to Curated Classics
+      // 3. Fallback to Curated Classics
       const fallback = getCuratedBooksList({
         search: currentSearch,
         topic: currentTopic,

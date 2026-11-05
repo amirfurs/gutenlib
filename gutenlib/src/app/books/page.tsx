@@ -1,5 +1,6 @@
 import { BooksCatalog } from "@/components/catalog/BooksCatalog";
 import { gutendex, getCuratedBooksList, type GutendexList } from "@/lib/gutendex";
+import { fetchOfficialGutenbergBooks } from "@/lib/gutenbergOfficial";
 
 export default async function BooksPage({
   searchParams,
@@ -15,15 +16,19 @@ export default async function BooksPage({
 
   let initialData: GutendexList;
   try {
-    initialData = await gutendex<GutendexList>("/books", {
-      search,
-      topic,
-      sort,
-      page,
-      ...(languages && languages !== "all" ? { languages } : {}),
-    });
+    initialData = await fetchOfficialGutenbergBooks({ search, topic, sort, page, languages });
   } catch {
-    initialData = getCuratedBooksList({ search, topic, sort, page });
+    try {
+      initialData = await gutendex<GutendexList>("/books", {
+        search,
+        topic,
+        sort,
+        page,
+        ...(languages && languages !== "all" ? { languages } : {}),
+      });
+    } catch {
+      initialData = getCuratedBooksList({ search, topic, sort, page });
+    }
   }
 
   return (

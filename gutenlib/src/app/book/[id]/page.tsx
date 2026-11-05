@@ -1,5 +1,6 @@
 import { BookDetailClient } from "@/components/catalog/BookDetailClient";
 import { gutendex, getFallbackBook, type GutendexBook } from "@/lib/gutendex";
+import { fetchOfficialGutenbergBook } from "@/lib/gutenbergOfficial";
 
 export default async function BookPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -8,10 +9,14 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
   let isDegraded = false;
 
   try {
-    book = await gutendex<GutendexBook>(`/books/${id}`);
+    book = await fetchOfficialGutenbergBook(id);
   } catch {
-    isDegraded = true;
-    book = getFallbackBook(id);
+    try {
+      book = await gutendex<GutendexBook>(`/books/${id}`);
+    } catch {
+      isDegraded = true;
+      book = getFallbackBook(id);
+    }
   }
 
   if (!book) {

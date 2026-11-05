@@ -17,16 +17,14 @@ export function BookDetailClient({ initialBook, isInitialDegraded }: BookDetailC
   const [isDegraded, setIsDegraded] = useState<boolean>(isInitialDegraded);
   const [hydrating, setHydrating] = useState<boolean>(false);
 
-  // In the browser, fetch the live metadata from gutendex.com (with CORS: *) if initially degraded
+  // In the browser, fetch the live metadata via /api/book/[id] if initially degraded
   useEffect(() => {
     if (isInitialDegraded || book.title.startsWith("Project Gutenberg Book #")) {
       setHydrating(true);
-      fetch(`https://gutendex.com/books/${initialBook.id}/`, {
-        headers: { Accept: "application/json" },
-      })
+      fetch(`/api/book/${initialBook.id}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((data: GutendexBook | null) => {
-          if (data && data.title) {
+          if (data && data.title && !data.title.startsWith("Project Gutenberg Book #")) {
             setBook(data);
             setIsDegraded(false);
           }
@@ -174,3 +172,4 @@ export function BookDetailClient({ initialBook, isInitialDegraded }: BookDetailC
     </div>
   );
 }
+

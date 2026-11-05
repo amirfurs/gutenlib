@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { gutendex, getCuratedBooksList, type GutendexList } from "@/lib/gutendex";
+import { fetchOfficialGutenbergBooks } from "@/lib/gutenbergOfficial";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -9,15 +10,37 @@ export async function GET(req: Request) {
   const sort = url.searchParams.get("sort") ?? "popular";
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const rawLang = url.searchParams.get("languages");
-  const languages = rawLang && rawLang !== "all" ? rawLang : undefined;
+  const languages = rawLang && rawLang !== "all" ? rawLang : "all";
 
+  // 1. Primary: Official Project Gutenberg Search (covers all 79,700+ books, never blocked, 250ms)
+  try {
+    const officialData = await fetchOfficialGutenbergBooks({
+      search,
+      topic,
+      sort,
+      page,
+      languages,
+    });
+
+    if (officialData.results && officialData.results.length > 0) {
+      return NextResponse.json(officialData, {
+        headers: {
+          "Cache-Control": "s-maxage=600, stale-while-revalidate=3600",
+        },
+      });
+    }
+  } catch {
+    // Fall through to Gutendex
+  }
+
+  // 2. Secondary: Gutendex (if available)
   try {
     const data = await gutendex<GutendexList>("/books", {
       search,
       topic,
       sort,
       page,
-      ...(languages ? { languages } : {}),
+      ...(languages !== "all" ? { languages } : {}),
     });
 
     if (data.results && data.results.length > 0) {
@@ -28,7 +51,7 @@ export async function GET(req: Request) {
       });
     }
   } catch {
-    // If direct Gutendex fails (e.g. Cloudflare on Vercel), try voice server proxy if configured
+    // 3. Tertiary: Voice server proxy if configured
     const voiceServer = (process.env.VOICE_SERVER_URL || process.env.NEXT_PUBLIC_VOICE_SERVER_URL || "").replace(/\/$/, "");
     if (voiceServer) {
       try {
@@ -37,7 +60,7 @@ export async function GET(req: Request) {
         if (topic) proxyUrl.searchParams.set("topic", topic);
         if (sort) proxyUrl.searchParams.set("sort", sort);
         if (page > 1) proxyUrl.searchParams.set("page", String(page));
-        if (languages) proxyUrl.searchParams.set("languages", languages);
+        if (languages !== "all") proxyUrl.searchParams.set("languages", languages);
 
         const vRes = await fetch(proxyUrl.toString(), {
           headers: { Accept: "application/json" },
@@ -60,6 +83,7 @@ export async function GET(req: Request) {
     }
   }
 
+  // 4. Final Fallback: Curated Classics
   const fallback = getCuratedBooksList({ search, topic, sort, page });
   return NextResponse.json(fallback, {
     headers: {
