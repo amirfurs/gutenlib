@@ -10,6 +10,7 @@ import {
   Copy,
   Hand,
   Headphones,
+  Highlighter,
   LogOut,
   MessageCircle,
   Mic,
@@ -359,12 +360,6 @@ export default function RoomPage() {
 
                 {room.book ? (
                   <div className="reader-surface">
-                    <div className="reader-meta">
-                      <span>
-                        <BookOpen size={17} /> قراءة مشتركة
-                      </span>
-                      <span>{room.reading.kind === "page" ? "الصفحة " + room.reading.index : "المقطع " + (room.reading.index + 1)}</span>
-                    </div>
                     <div className="reader-content">
                       {room.book.source === "abl" ? (
                         <RoomArabicReader
@@ -373,6 +368,8 @@ export default function RoomPage() {
                           onPageChange={(page) => room.hostAction("host-set-page", { page })}
                           isHost={isHost}
                           highlightText={room.highlight}
+                          bookTitle={room.book.title}
+                          bookAuthor={room.book.author}
                         />
                       ) : (
                         <RoomReader
@@ -383,24 +380,40 @@ export default function RoomPage() {
                           }}
                           isHost={isHost}
                           highlightText={room.highlight}
+                          bookTitle={room.book.title}
+                          bookAuthor={room.book.author}
                         />
                       )}
                     </div>
                     {isHost && (
                       <div className="highlight-tools">
-                        <button
-                          className="voice-btn"
-                          onClick={() => {
-                            const text = window.getSelection()?.toString().trim();
-                            if (text) room.hostAction("host-set-highlight", { text: text.slice(0, 1200) });
-                          }}
-                        >
-                          تمييز النص المحدد
-                        </button>
-                        {room.highlight && (
-                          <button className="voice-btn" onClick={() => room.hostAction("host-clear-highlight")}>
-                            إزالة التمييز
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="voice-btn"
+                            onClick={() => {
+                              const text = window.getSelection()?.toString().trim();
+                              if (text) room.hostAction("host-set-highlight", { text: text.slice(0, 1200) });
+                            }}
+                          >
+                            <Highlighter size={15} />
+                            تمييز النص المحدد
                           </button>
+                          {room.highlight && (
+                            <button
+                              type="button"
+                              className="voice-btn"
+                              onClick={() => room.hostAction("host-clear-highlight")}
+                            >
+                              <X size={15} />
+                              إزالة التمييز
+                            </button>
+                          )}
+                        </div>
+                        {room.highlight && (
+                          <span className="text-xs text-stone-400 max-w-xs truncate" title={room.highlight}>
+                            النص المميّز: &quot;{room.highlight}&quot;
+                          </span>
                         )}
                       </div>
                     )}

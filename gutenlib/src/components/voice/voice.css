@@ -95,15 +95,9 @@ html:has(.voice-room), body:has(.voice-room), html:has(.voice-landing), body:has
 .diagnostics { font-size: 11px; color: var(--voice-muted); overflow-wrap: anywhere; }
 .diagnostics div { padding: 8px 0; }
 .diagnostics span { display: block; }
-.reader-surface { background: var(--voice-surface); color: var(--voice-ink); border: 1px solid var(--voice-rule); border-radius: var(--voice-radius); overflow-wrap: anywhere; }
-.reader-meta { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--voice-muted); border-bottom: 1px solid var(--voice-rule); }
-.reader-meta span:first-child { display: flex; gap: 8px; align-items: center; }
-.reader-content { padding: clamp(12px, 2vw, 24px); }
-.reader-content > div > div:first-child { flex-wrap: wrap; }
-.reader-content input[type="range"] { max-width: 120px; }
-.reader-content article { overflow-wrap: anywhere; }
-.reader-content button { min-height: 44px; }
-.highlight-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; border-top: 1px solid var(--voice-rule); }
+.reader-surface { background: transparent; color: var(--voice-ink); border: none; border-radius: var(--voice-radius); overflow-wrap: anywhere; }
+.reader-content { padding: 0; }
+.highlight-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; margin-top: 12px; background: var(--voice-surface); border: 1px solid var(--voice-rule); border-radius: 12px; }
 .call-bar { position: fixed; inset-inline: clamp(8px, 2vw, 16px); bottom: max(10px, env(safe-area-inset-bottom)); z-index: 45; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: clamp(8px, 2vw, 14px); background: var(--voice-surface); color: var(--voice-ink); border: 1px solid var(--voice-rule); border-radius: 12px; max-width: 1090px; margin-inline: auto; }
 .call-bar__identity { display: none; align-items: center; gap: 12px; }
 .call-bar__identity strong { display: block; font-size: 13px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
