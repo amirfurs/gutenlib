@@ -141,7 +141,7 @@ function buildRoomSummary(room) {
   };
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   // If request is for Socket.IO polling / handshake, allow Socket.IO listener to handle it
   if (req.url?.startsWith("/socket.io")) {
     return;
@@ -245,6 +245,35 @@ const server = http.createServer((req, res) => {
     });
     res.end();
     return;
+  }
+
+  if (req.method === "GET" && req.url?.startsWith("/gutendex/")) {
+    const subpath = req.url.slice("/gutendex/".length);
+    const targetUrl = new URL(subpath, "https://gutendex.com/");
+    try {
+      const gRes = await fetch(targetUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      const data = await gRes.text();
+      res.writeHead(gRes.status, {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin),
+        "Cache-Control": "public, max-age=600",
+      });
+      res.end(data);
+      return;
+    } catch (e) {
+      res.writeHead(502, {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin),
+      });
+      res.end(JSON.stringify({ error: String(e?.message || "Gutendex proxy failed") }));
+      return;
+    }
   }
 
   if (req.method === "GET" && (req.url === "/health" || req.url === "/healthz")) {
