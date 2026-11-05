@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 
 function pageKey(id: string) {
   return `gutenlib_reader_page_${id}`;
@@ -46,6 +47,13 @@ export function Reader({ id }: { id: string }) {
   const [lineHeight, setLineHeight] = useState(1.75);
   const [pageIndex, setPageIndex] = useState(0);
   const [typeOpen, setTypeOpen] = useState(false);
+
+  // Search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<{ page: number; excerpt: string }>>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,6 +335,43 @@ export function Reader({ id }: { id: string }) {
     return s.replace(/\n+/g, " ").replace(/\s{2,}/g, " ").trim();
   }
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function runSearch() {
+    const q = searchQ.trim().toLowerCase();
+    if (!q || !pages.length) return;
+    setSearching(true);
+    setHasSearched(true);
+
+    const out: Array<{ page: number; excerpt: string }> = [];
+    pages.forEach((pageText, pIdx) => {
+      const lower = pageText.toLowerCase();
+      let pos = lower.indexOf(q);
+      while (pos !== -1) {
+        const start = Math.max(0, pos - 50);
+        const end = Math.min(pageText.length, pos + q.length + 50);
+        const prefix = start > 0 ? "..." : "";
+        const suffix = end < pageText.length ? "..." : "";
+        const excerpt = prefix + pageText.slice(start, end).replace(/\s+/g, " ").trim() + suffix;
+        out.push({ page: pIdx, excerpt });
+        if (out.length >= 80) break;
+        pos = lower.indexOf(q, pos + Math.max(1, q.length));
+      }
+    });
+
+    setSearchResults(out);
+    setSearching(false);
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-3 sm:px-4 py-4 sm:py-8">
       <div className="flex items-center justify-between gap-2">
@@ -343,6 +388,16 @@ export function Reader({ id }: { id: string }) {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            className="pressable rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 min-h-[38px] inline-flex items-center gap-1.5"
+            onClick={() => setSearchOpen(true)}
+            title="Search in book (Ctrl/⌘ + F)"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Search</span>
+          </button>
+
           <button
             type="button"
             className="pressable rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/15 min-h-[38px]"
@@ -473,6 +528,97 @@ export function Reader({ id }: { id: string }) {
                 </div>
               ) : (
                 <div className="text-sm text-zinc-400">No headings found.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Search overlay */}
+      {searchOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md" onClick={() => setSearchOpen(false)}>
+          <div
+            className="modal-enter w-full max-w-2xl rounded-2xl bg-zinc-950 p-4 sm:p-6 ring-1 ring-white/10 shadow-2xl max-h-[85dvh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
+              <div>
+                <div className="text-base font-semibold text-white">Search in book</div>
+                <div className="text-xs text-zinc-400">Search text across all pages</div>
+              </div>
+              <button
+                className="pressable rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/15 min-h-[36px]"
+                onClick={() => setSearchOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <form
+              className="mt-4 flex gap-2 shrink-0"
+              onSubmit={(e) => {
+                e.preventDefault();
+                runSearch();
+              }}
+            >
+              <input
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder="Type word or phrase to find…"
+                className="h-10 w-full rounded-lg bg-white/5 px-3.5 text-sm text-white ring-1 ring-white/10 placeholder:text-zinc-500 focus:outline-none focus:ring-brand-500"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="pressable h-10 rounded-lg bg-brand-500 px-4 sm:px-5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 shrink-0"
+                disabled={!searchQ.trim() || searching}
+              >
+                {searching ? "Searching…" : "Search"}
+              </button>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div className="mt-3 flex items-center justify-between text-xs text-zinc-400 shrink-0 px-1">
+                <span>
+                  Found <strong className="text-white">{searchResults.length}</strong> {searchResults.length === 1 ? "match" : "matches"}
+                </span>
+                <span>Click any match to jump to page</span>
+              </div>
+            )}
+
+            <div className="mt-3 flex-1 overflow-y-auto min-h-[140px]">
+              {searchResults.length ? (
+                <div className="divide-y divide-white/10">
+                  {searchResults.map((r, idx) => (
+                    <button
+                      key={`${r.page}-${idx}`}
+                      className="pressable w-full px-3 py-3 text-left rounded-lg transition hover:bg-white/5 flex flex-col gap-1"
+                      onClick={() => {
+                        setPageIndex(r.page);
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <div className="text-[11px] font-semibold text-brand-400">
+                        Page {r.page + 1} of {totalPages}
+                      </div>
+                      <div className="text-sm text-zinc-200 leading-relaxed line-clamp-2">
+                        {r.excerpt}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : searching ? (
+                <div className="py-12 text-center text-sm text-zinc-400">
+                  Searching across pages…
+                </div>
+              ) : hasSearched ? (
+                <div className="py-12 text-center text-sm text-zinc-400">
+                  No matches found for &ldquo;<span className="text-white font-medium">{searchQ}</span>&rdquo;.
+                </div>
+              ) : (
+                <div className="py-12 text-center text-sm text-zinc-400">
+                  Enter a keyword or phrase above and press <span className="text-zinc-200 font-medium">Search</span>.
+                </div>
               )}
             </div>
           </div>

@@ -24,6 +24,26 @@ function flattenToc(items: TocItem[], level = 0): Array<{ label: string; href: s
   return out;
 }
 
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <span>{text}</span>;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escaped})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <span>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-brand-500/40 text-white rounded px-0.5 font-medium not-italic">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </span>
+  );
+}
+
 export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string }) {
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const bookRef = useRef<Book | null>(null);
@@ -37,7 +57,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
   const [progressReady, setProgressReady] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
-  // reading prefs (same feature set as Arabic reader)
+  // reading prefs
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [prefs, setPrefs] = useState<ReaderPrefs>(DEFAULT_PREFS);
   const effectiveTheme: ReaderTheme = useMemo(() => {
@@ -49,9 +69,11 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
     }
   }, [prefs.theme]);
 
+  // search state
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [searchResults, setSearchResults] = useState<Array<{ cfi: string; excerpt: string; label?: string }>>([]);
   const [matchIdx, setMatchIdx] = useState<number>(-1);
   const searchRunId = useRef(0);
@@ -81,6 +103,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
     return map;
   }, [flatToc]);
 
+  // Main effect: loads the EPUB file once
   useEffect(() => {
     let cancelled = false;
 
@@ -95,21 +118,20 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
         if (existing?.finished) setIsFinished(true);
         else setIsFinished(false);
 
-        // fetch metadata (title/cover/author) for reading list
+        // Fetch book metadata asynchronously for reading list
         let meta: { title?: string; author?: string; cover?: string | null } = {};
-        try {
-          const bookRes = await fetch(`/api/book/${id}`);
-          if (bookRes.ok) {
-            const b = await bookRes.json();
-            meta = {
-              title: b?.title,
-              author: b?.authors?.[0]?.name ?? "Unknown",
-              cover: b?.formats?.["image/jpeg"] ?? null,
-            };
-          }
-        } catch {
-          // ignore
-        }
+        fetch(`/api/book/${id}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((b) => {
+            if (b) {
+              meta = {
+                title: b?.title,
+                author: b?.authors?.[0]?.name ?? "Unknown",
+                cover: b?.formats?.["image/jpeg"] ?? null,
+              };
+            }
+          })
+          .catch(() => {});
 
         const res = await fetch(`/api/epub/${id}`);
         if (!res.ok) {
@@ -121,14 +143,19 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
         if (cancelled) return;
 
         // Cleanup any prior instance
-        renditionRef.current?.destroy?.();
-        bookRef.current?.destroy?.();
+        try {
+          renditionRef.current?.destroy?.();
+          bookRef.current?.destroy?.();
+        } catch {}
 
         const book = ePub(buf);
         bookRef.current = book;
 
         await book.ready;
-        await book.loaded.navigation;
+        await Promise.all([
+          book.loaded.navigation.catch(() => {}),
+          book.loaded.spine.catch(() => {}),
+        ]);
 
         const nav: any = (book as any).navigation;
         const tocItems: TocItem[] = (nav?.toc ?? []) as any;
@@ -147,7 +174,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
         });
         renditionRef.current = rendition;
 
-        // Themes + user prefs
+        // Themes
         rendition.themes.register("dark", {
           body: {
             background: "#000",
@@ -163,7 +190,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           a: { color: "#E50914" },
         });
 
-        // Apply theme + typography
+        // Apply initial theme + typography
         rendition.themes.select(effectiveTheme === "light" ? "light" : "dark");
         rendition.themes.fontSize(`${prefs.fontSizePx}px`);
         rendition.themes.default({ body: { lineHeight: String(prefs.lineHeight) } });
@@ -177,15 +204,8 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           await rendition.display();
         }
 
-        // Build locations to compute percentage (can take a moment)
-        try {
-          // @ts-ignore
-          await (book as any).locations.generate?.(1500);
-          if (!cancelled) setProgressReady(true);
-        } catch {
-          // if locations fail, we still store CFI but percent may be 0
-          if (!cancelled) setProgressReady(false);
-        }
+        // Rendered! Hide loading indicator immediately
+        if (!cancelled) setLoading(false);
 
         const updateFromCfi = (cfi?: string) => {
           if (!cfi) return;
@@ -197,7 +217,6 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
             p = 0;
           }
           if (!cancelled) setProgress(p);
-          // keep notes list reasonably fresh (best-effort)
           void refreshNotes(cfi);
 
           upsertEntry(String(id), {
@@ -215,7 +234,6 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           updateFromCfi(cfi);
         });
 
-        // Make sure we store at least once (initial display)
         updateFromCfi(savedCfi);
 
         // Keyboard nav + find
@@ -228,10 +246,27 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           }
         };
         window.addEventListener("keydown", onKey);
+        // Also capture inside iframe
+        // @ts-ignore
+        rendition.on?.("keydown", onKey);
 
-        if (!cancelled) setLoading(false);
+        // Build locations asynchronously in background to compute exact percentage
+        (book as any).locations
+          ?.generate?.(1500)
+          .then(() => {
+            if (!cancelled) {
+              setProgressReady(true);
+              const curCfi = (renditionRef.current as any)?.location?.start?.cfi;
+              if (curCfi) updateFromCfi(curCfi);
+            }
+          })
+          .catch(() => {
+            if (!cancelled) setProgressReady(false);
+          });
 
-        return () => window.removeEventListener("keydown", onKey);
+        return () => {
+          window.removeEventListener("keydown", onKey);
+        };
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load");
         if (!cancelled) setLoading(false);
@@ -242,18 +277,28 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
 
     return () => {
       cancelled = true;
-      // best-effort cleanup
       Promise.resolve(cleanupPromise).catch(() => {});
       try {
         renditionRef.current?.destroy?.();
         bookRef.current?.destroy?.();
-      } catch {
-        // ignore
-      }
+      } catch {}
       renditionRef.current = null;
       bookRef.current = null;
     };
-  }, [id, initialCfi, effectiveTheme, prefs.fontSizePx, prefs.lineHeight]);
+  }, [id, initialCfi]);
+
+  // Synchronize themes and typography preferences dynamically without reloading the EPUB
+  useEffect(() => {
+    const rendition: any = renditionRef.current;
+    if (!rendition?.themes) return;
+    try {
+      rendition.themes.select(effectiveTheme === "light" ? "light" : "dark");
+      rendition.themes.fontSize(`${prefs.fontSizePx}px`);
+      rendition.themes.default({ body: { lineHeight: String(prefs.lineHeight) } });
+    } catch {
+      // ignore
+    }
+  }, [effectiveTheme, prefs.fontSizePx, prefs.lineHeight]);
 
   function clearHighlight() {
     const rendition: any = renditionRef.current as any;
@@ -280,7 +325,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
         "gutenlib-search-hit",
         {
           fill: "#E50914",
-          "fill-opacity": "0.25",
+          "fill-opacity": "0.35",
           "mix-blend-mode": "screen",
         }
       );
@@ -297,8 +342,14 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
     if (!target) return;
 
     setMatchIdx(idx);
-    await renditionRef.current?.display(target.cfi);
-    applyHighlight(target.cfi);
+    try {
+      await renditionRef.current?.display(target.cfi);
+      applyHighlight(target.cfi);
+      // Secondary retry ensures highlight paints even across newly attached section viewports
+      setTimeout(() => applyHighlight(target.cfi), 60);
+    } catch {
+      // ignore
+    }
   }
 
   async function refreshNotes(currentCfi?: string) {
@@ -330,6 +381,7 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
 
     const runId = ++searchRunId.current;
     setSearching(true);
+    setHasSearched(true);
     setSearchResults([]);
     setMatchIdx(-1);
     clearHighlight();
@@ -340,30 +392,55 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
 
       for (const sec of spineItems) {
         if (searchRunId.current !== runId) return; // cancelled
-        if (!sec?.linear) continue;
+
+        const wasLoaded = !!sec.document;
 
         try {
           // Ensure the section document is loaded before searching
-          await sec.load(book.load.bind(book));
-          const hits: Array<{ cfi: string; excerpt: string }> = (sec.search?.(q) ?? []) as any;
+          if (!wasLoaded) {
+            await sec.load(book.load.bind(book));
+          }
+
+          // Use sec.find (reliable DOM search) with sec.search fallback
+          let hits: Array<{ cfi: string; excerpt: string }> = [];
+          if (typeof sec.find === "function") {
+            try {
+              hits = sec.find(q) || [];
+            } catch {
+              hits = [];
+            }
+          }
+          if (!hits.length && typeof sec.search === "function") {
+            try {
+              hits = sec.search(q) || [];
+            } catch {
+              hits = [];
+            }
+          }
+
           const href = String(sec?.href ?? "").split("#")[0];
           const label = tocLabelByHref.get(href);
 
           for (const h of hits) {
-            out.push({ cfi: h.cfi, excerpt: h.excerpt, label });
-            if (out.length >= 60) break;
+            if (!h?.cfi) continue;
+            const cleanExcerpt = (h.excerpt || "").replace(/\s+/g, " ").trim();
+            out.push({ cfi: h.cfi, excerpt: cleanExcerpt, label });
+            if (out.length >= 100) break;
           }
         } catch {
           // ignore section errors
         } finally {
-          try {
-            sec.unload?.();
-          } catch {
-            // ignore
+          // Only unload if it was not already loaded by the active reader
+          if (!wasLoaded) {
+            try {
+              sec.unload?.();
+            } catch {
+              // ignore
+            }
           }
         }
 
-        if (out.length >= 60) break;
+        if (out.length >= 100) break;
       }
 
       if (searchRunId.current !== runId) return;
@@ -444,16 +521,17 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
           >
             <ChevronRight className="h-4 w-4" />
           </button>
+
           {searchResults.length ? (
-            <div className="hidden items-center gap-2 rounded-md bg-white/5 px-2 py-1.5 text-xs text-zinc-300 ring-1 ring-white/10 md:flex">
+            <div className="flex items-center gap-1.5 sm:gap-2 rounded-md bg-white/5 px-2 py-1 text-xs text-zinc-300 ring-1 ring-white/10">
               <button
                 className="pressable rounded bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/15"
                 onClick={() => goToMatch((matchIdx < 0 ? 0 : matchIdx) - 1)}
                 title="Previous match"
               >
-                Prev match
+                Prev
               </button>
-              <div className="tabular-nums text-zinc-300">
+              <div className="tabular-nums text-zinc-300 text-xs font-medium">
                 {Math.max(0, matchIdx) + 1}/{searchResults.length}
               </div>
               <button
@@ -461,13 +539,16 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
                 onClick={() => goToMatch((matchIdx < 0 ? 0 : matchIdx) + 1)}
                 title="Next match"
               >
-                Next match
+                Next
               </button>
             </div>
           ) : null}
 
           <button
-            className="pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15"
+            className={
+              "pressable min-h-[38px] min-w-[38px] inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition " +
+              (searchResults.length > 0 ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-white/10 text-white hover:bg-white/15")
+            }
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
             title="Search (Ctrl/⌘ + F)"
@@ -622,17 +703,26 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
       ) : null}
 
       {searchOpen ? (
-        <div className="fixed inset-0 z-50 bg-black/70 p-4 backdrop-blur-sm" onClick={() => setSearchOpen(false)}>
-          <div className="mx-auto max-w-2xl rounded-xl bg-black p-4 ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold text-white">Search in book</div>
-              <button className="rounded-md bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/15" onClick={() => setSearchOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-4 backdrop-blur-md" onClick={() => setSearchOpen(false)}>
+          <div
+            className="w-full max-w-2xl rounded-2xl bg-zinc-950 p-4 sm:p-6 ring-1 ring-white/10 shadow-2xl max-h-[85dvh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
+              <div>
+                <div className="text-base font-semibold text-white">Search in book</div>
+                <div className="text-xs text-zinc-400">Search text across all chapters and sections</div>
+              </div>
+              <button
+                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/15 min-h-[36px]"
+                onClick={() => setSearchOpen(false)}
+              >
                 Close
               </button>
             </div>
 
             <form
-              className="mt-3 flex gap-2"
+              className="mt-4 flex gap-2 shrink-0"
               onSubmit={(e) => {
                 e.preventDefault();
                 runSearch();
@@ -641,40 +731,68 @@ export function EpubReader({ id, initialCfi }: { id: string; initialCfi?: string
               <input
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
-                placeholder="Search text…"
-                className="h-10 w-full rounded-md bg-white/5 px-3 text-sm text-white ring-1 ring-white/10"
+                placeholder="Type word or phrase to find…"
+                className="h-10 w-full rounded-lg bg-white/5 px-3.5 text-sm text-white ring-1 ring-white/10 placeholder:text-zinc-500 focus:outline-none focus:ring-brand-500"
                 autoFocus
               />
               <button
                 type="submit"
-                className="h-10 rounded-md bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                className="h-10 rounded-lg bg-brand-500 px-4 sm:px-5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 shrink-0"
                 disabled={!searchQ.trim() || searching}
               >
                 {searching ? "Searching…" : "Search"}
               </button>
             </form>
 
-            <div className="mt-3 max-h-[70vh] overflow-auto">
+            {searchResults.length > 0 && (
+              <div className="mt-3 flex items-center justify-between text-xs text-zinc-400 shrink-0 px-1">
+                <span>
+                  Found <strong className="text-white">{searchResults.length}</strong> {searchResults.length === 1 ? "match" : "matches"}
+                </span>
+                <span>Click any match to jump</span>
+              </div>
+            )}
+
+            <div className="mt-3 flex-1 overflow-y-auto min-h-[140px]">
               {searchResults.length ? (
                 <div className="divide-y divide-white/10">
                   {searchResults.map((r, idx) => (
                     <button
                       key={`${r.cfi}-${idx}`}
-                      className="w-full px-2 py-3 text-left text-sm text-zinc-200 hover:bg-white/5"
+                      className={
+                        "w-full px-3 py-3 text-left rounded-lg transition " +
+                        (matchIdx === idx ? "bg-brand-500/15 ring-1 ring-brand-500/30" : "hover:bg-white/5")
+                      }
                       onClick={() => {
                         goToMatch(idx);
                         setSearchOpen(false);
                       }}
                     >
-                      {r.label ? <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{r.label}</div> : null}
-                      <div className="mt-1 line-clamp-3 text-sm text-zinc-200">{r.excerpt}</div>
+                      {r.label ? (
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">
+                          {r.label}
+                        </div>
+                      ) : null}
+                      <div className="mt-1 line-clamp-3 text-sm text-zinc-200 leading-relaxed">
+                        <HighlightedText text={r.excerpt} query={searchQ.trim()} />
+                      </div>
                     </button>
                   ))}
                 </div>
               ) : searching ? (
-                <div className="px-2 py-3 text-sm text-zinc-400">Searching the whole book…</div>
+                <div className="py-12 text-center text-sm text-zinc-400">
+                  <div className="animate-spin inline-block w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full mb-3" />
+                  <div>Searching across all chapters and sections…</div>
+                </div>
+              ) : hasSearched ? (
+                <div className="py-12 text-center text-sm text-zinc-400">
+                  No matches found for &ldquo;<span className="text-white font-medium">{searchQ}</span>&rdquo;.
+                  <div className="text-xs text-zinc-500 mt-1">Try another search term or check spelling.</div>
+                </div>
               ) : (
-                <div className="px-2 py-3 text-sm text-zinc-400">No results yet. Type a query and press Search.</div>
+                <div className="py-12 text-center text-sm text-zinc-400">
+                  Enter a keyword or phrase above and press <span className="text-zinc-200 font-medium">Search</span> or Enter.
+                </div>
               )}
             </div>
           </div>
