@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: gutenlib-voice-server
+    runtime: node
+    plan: free
+    rootDir: gutenlib/voice-server
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: VOICE_ORIGINS
+        value: https://gutenlib-azure.vercel.app,http://localhost:3000

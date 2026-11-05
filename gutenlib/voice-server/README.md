@@ -15,30 +15,54 @@ npm run dev:voice
 
 ---
 
-## Deploy to Railway (recommended, free tier)
+## 🚀 Deploy to Render (Recommended - Free Tier)
+
+Deploy the voice signaling server to Render with one click:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/amirfurs/gutenlib)
+
+### Option A: One-Click Blueprint
+1. Click the **Deploy to Render** button above (or open `https://render.com/deploy?repo=https://github.com/amirfurs/gutenlib`).
+2. Render detects `render.yaml` automatically and configures the `gutenlib-voice-server` web service.
+3. Click **Apply**.
+4. Once deployed, copy your Render URL (e.g., `https://gutenlib-voice-server.onrender.com`).
+5. In your Vercel Dashboard (`gutenlib-azure` -> Settings -> Environment Variables):
+   - **Key:** `NEXT_PUBLIC_VOICE_SERVER_URL`
+   - **Value:** `https://gutenlib-voice-server.onrender.com`
+6. Redeploy Vercel.
+
+### Option B: Manual Web Service Setup
+1. Log into [Render Dashboard](https://dashboard.render.com/) → Click **New +** → **Web Service**.
+2. Connect repository `https://github.com/amirfurs/gutenlib`.
+3. Set the configuration:
+   - **Name:** `gutenlib-voice-server`
+   - **Root Directory:** `gutenlib/voice-server`
+   - **Runtime:** `Node`
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+   - **Instance Type:** `Free`
+4. Under **Environment Variables**, add:
+   - `VOICE_ORIGINS` = `https://gutenlib-azure.vercel.app,http://localhost:3000`
+5. Click **Create Web Service**.
+6. Copy the assigned URL and set `NEXT_PUBLIC_VOICE_SERVER_URL` in Vercel.
+
+---
+
+## Deploy to Railway (Alternative)
 
 1. Push this repo to GitHub
 2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. **Set root directory** to `voice-server`
+3. **Set root directory** to `gutenlib/voice-server`
 4. Railway auto-detects `package.json` and runs `npm start`
 5. Set environment variables in Railway dashboard:
 
 | Variable | Value |
 |----------|-------|
-| `VOICE_ORIGINS` | `https://your-app.vercel.app,http://localhost:3000` |
+| `VOICE_ORIGINS` | `https://gutenlib-azure.vercel.app,http://localhost:3000` |
 | `VOICE_PORT` | `3001` (Railway overrides with `PORT` automatically) |
 
-1. Copy the Railway public URL (e.g. `https://gutenlib-voice.up.railway.app`)
-2. Set on Vercel: `NEXT_PUBLIC_VOICE_SERVER_URL=https://gutenlib-voice.up.railway.app`
-
----
-
-## Deploy to Render
-
-1. New Web Service → connect repo → set root to `voice-server`
-2. Build command: `npm install`
-3. Start command: `npm start`
-4. Add environment vars same as Railway above
+6. Copy the Railway public URL (e.g. `https://gutenlib-voice.up.railway.app`)
+7. Set on Vercel: `NEXT_PUBLIC_VOICE_SERVER_URL=https://gutenlib-voice.up.railway.app`
 
 ---
 

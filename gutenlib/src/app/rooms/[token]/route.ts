@@ -7,9 +7,11 @@ export async function GET(
 ) {
   const { token } = await params;
   const baseUrl = getVoiceServerUrl();
-  const isLocal = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
+  const isLocal = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1") || baseUrl.includes("::1");
+  const isVercelServer = Boolean(process.env.VERCEL);
+  const canForward = !isVercelServer || !isLocal;
 
-  if (process.env.VOICE_SERVER_URL || isLocal) {
+  if (canForward) {
     try {
       const targetUrl = new URL(`/rooms/${encodeURIComponent(token)}`, baseUrl);
       const controller = new AbortController();

@@ -29,10 +29,11 @@ function isAllowedOrigin(reqOrigin) {
   try {
     const url = new URL(reqOrigin);
     const host = url.hostname;
-    // Allow Vercel preview and production deployments
+    // Allow Gutenlib Vercel deployments
     if (
-      process.env.VERCEL ||
-      host.endsWith(".vercel.app") ||
+      host === "gutenlib-azure.vercel.app" ||
+      host === "gutenlib.vercel.app" ||
+      host.startsWith("gutenlib-git-") ||
       (process.env.VERCEL_URL && host === process.env.VERCEL_URL)
     ) {
       return true;
@@ -88,9 +89,9 @@ function now() {
   return Date.now();
 }
 
-function makeRoom() {
-  const inviteToken = nanoid(16);
-  const hostSecret = nanoid(24);
+function makeRoom(customInviteToken, customHostSecret) {
+  const inviteToken = (typeof customInviteToken === "string" && customInviteToken.trim()) || nanoid(16);
+  const hostSecret = (typeof customHostSecret === "string" && customHostSecret.trim()) || nanoid(24);
   const room = {
     inviteToken,
     hostSecret,
@@ -246,6 +247,15 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && (req.url === "/health" || req.url === "/healthz")) {
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": getAllowOrigin(req.headers.origin),
+    });
+    res.end(JSON.stringify({ status: "ok", service: "gutenlib-voice-server", rooms: rooms.size }));
+    return;
+  }
+
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("voice-server ok");
 });
@@ -276,10 +286,16 @@ io.on("connection", (socket) => {
   });
   socket.on("join-room", (payload = {}) => {
     const { inviteToken, displayName, hostSecret, clientId } = payload;
-    const room = rooms.get(inviteToken);
+    let room = rooms.get(inviteToken);
     if (!room) {
-      socket.emit("join-error", { error: "ROOM_NOT_FOUND" });
-      return;
+      if (hostSecret && typeof hostSecret === "string" && hostSecret.trim().length >= 16) {
+        room = makeRoom(inviteToken, hostSecret.trim());
+        room.roomName = (typeof payload.roomName === "string" && payload.roomName ? payload.roomName : "غرفة قراءة").slice(0, 60);
+        room.hostDisplayName = typeof displayName === "string" ? displayName.slice(0, 32) : "";
+      } else {
+        socket.emit("join-error", { error: "ROOM_NOT_FOUND" });
+        return;
+      }
     }
 
     // basic expiry
@@ -785,7 +801,7 @@ io.on("connection", (socket) => {
 });
 
 export { server, io };
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) server.listen(PORT, () => {
-  console.log(`[voice-server] listening on http://localhost:${PORT}`);
-  console.log(`[voice-server] allowing origin: ${ORIGIN}`);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) server.listen(PORT, "0.0.0.0", () => {
+  console.log(`[voice-server] listening on 0.0.0.0:${PORT}`);
+  console.log(`[voice-server] primary origin: ${ORIGIN}`);
 });

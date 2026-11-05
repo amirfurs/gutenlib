@@ -160,6 +160,27 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## 🌐 Production Deployment (Vercel + Render)
+
+Gutenlib is architected for production across two services:
+1. **Frontend & Book APIs**: Hosted on **Vercel** (`https://gutenlib-azure.vercel.app`)
+2. **WebRTC Voice Signaling Server**: Hosted on **Render** (free persistent Node.js web service)
+
+### 1-Click Voice Server Deployment on Render
+Deploy the persistent Socket.IO signaling server to Render with one click:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/amirfurs/gutenlib)
+
+1. Click **Deploy to Render** above.
+2. Render detects `render.yaml` automatically and creates `gutenlib-voice-server`.
+3. Click **Apply**.
+4. Once deployed, copy your Render URL (e.g., `https://gutenlib-voice-server.onrender.com`).
+5. In your Vercel Dashboard (`gutenlib-azure` -> **Settings** -> **Environment Variables**):
+   - Add `NEXT_PUBLIC_VOICE_SERVER_URL` = `https://gutenlib-voice-server.onrender.com`
+6. Redeploy your Vercel app. Rooms and live voice reading will now work globally on all mobile devices and desktop browsers!
+
+---
+
 ## 🧪 Testing & Verification
 
 Gutenlib includes an automated end-to-end verification suite covering APIs, WebRTC signaling, DOM hydration, and multi-device mobile viewport responsiveness:
