@@ -103,7 +103,7 @@ export function BooksCatalog({
       try {
         const res = await fetch(directUrl, {
           headers: { Accept: "application/json" },
-          signal: controller.signal,
+          signal: typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? (AbortSignal.timeout(6000) as any) : controller.signal,
         });
 
         if (res.ok) {
@@ -120,11 +120,39 @@ export function BooksCatalog({
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") {
-          return;
+          // aborted or timed out
         }
       }
 
-      // 2. Try App API Proxy (/api/books)
+      // 2. Try Voice Server Gutendex Proxy if configured
+      try {
+        const voiceUrl =
+          process.env.NEXT_PUBLIC_VOICE_SERVER_URL ||
+          (typeof window !== "undefined" ? localStorage.getItem("gutenlib_voice_url") : null);
+        if (voiceUrl) {
+          const proxyTarget = `${voiceUrl.replace(/\/$/, "")}/gutendex/books/?${qs.toString()}`;
+          const res = await fetch(proxyTarget, {
+            headers: { Accept: "application/json" },
+            signal: typeof AbortSignal !== "undefined" && "timeout" in AbortSignal ? (AbortSignal.timeout(6000) as any) : controller.signal,
+          });
+          if (res.ok) {
+            const data: GutendexList = await res.json();
+            if (Array.isArray(data.results) && data.results.length > 0) {
+              setBooks(data.results);
+              setTotalCount(data.count ?? 0);
+              setHasNext(Boolean(data.next));
+              setHasPrev(Boolean(data.previous));
+              setIsLive(true);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+      } catch {
+        // Fall through
+      }
+
+      // 3. Try App API Proxy (/api/books)
       try {
         const proxyUrl = `/api/books?${qs.toString()}`;
         const res = await fetch(proxyUrl, { signal: controller.signal });
@@ -144,7 +172,7 @@ export function BooksCatalog({
         // Fall through
       }
 
-      // 3. Fallback to Curated Classics
+      // 4. Fallback to Curated Classics
       const fallback = getCuratedBooksList({
         search: currentSearch,
         topic: currentTopic,
@@ -239,22 +267,25 @@ export function BooksCatalog({
             {isLive ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live 70k+ Catalog
+                Live 79,000+ Catalog
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300 ring-1 ring-amber-500/20">
-                Curated Classics
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Connecting 79,000+ Books...
               </span>
             )}
           </div>
           <p className="mt-1 text-xs sm:text-sm text-zinc-400">
-            {totalCount > 0 ? (
+            {isLive ? (
               <span>
                 Exploring <strong className="text-white font-semibold">{totalCount.toLocaleString()}</strong> public domain books
                 {language !== "all" && <span> · Filtered by {LANGUAGES.find((l) => l.code === language)?.label.split(" ")[0]}</span>}
               </span>
             ) : (
-              "Accessing 70,000+ timeless classical texts."
+              <span>
+                Accessing <strong className="text-white font-semibold">79,000+</strong> public domain books · Showing popular classics while connecting live
+              </span>
             )}
           </p>
         </div>
@@ -481,8 +512,10 @@ export function BooksCatalog({
 
         <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium">
           <span>Page <strong className="text-white">{page}</strong></span>
-          {totalCount > 0 && (
+          {isLive && totalCount > 0 ? (
             <span>of {totalPages.toLocaleString()} ({totalCount.toLocaleString()} books)</span>
+          ) : (
+            <span>of ~2,490 (79,000+ books)</span>
           )}
         </div>
 

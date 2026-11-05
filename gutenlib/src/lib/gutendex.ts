@@ -498,6 +498,29 @@ export async function gutendex<T>(
     }
   }
 
+  // If direct Gutendex failed (e.g. Cloudflare on Vercel), try via voice server proxy if configured
+  const voiceServer = (process.env.VOICE_SERVER_URL || process.env.NEXT_PUBLIC_VOICE_SERVER_URL || "").replace(/\/$/, "");
+  if (voiceServer) {
+    try {
+      const proxyUrl = new URL(`${voiceServer}/gutendex${normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`}`);
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          if (v === undefined || v === null || v === "") continue;
+          proxyUrl.searchParams.set(k, String(v));
+        }
+      }
+      const pRes = await fetch(proxyUrl.toString(), {
+        headers: modernHeaders,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (pRes.ok) {
+        return (await pRes.json()) as T;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   throw lastError instanceof Error ? lastError : new Error(String(lastError || "Gutendex request failed"));
 }
 
