@@ -62,7 +62,8 @@ export function Header() {
 
   const inArabicSection =
     inArabic &&
-    (pathname === "/ar/books" ||
+    (pathname === "/ar" ||
+      pathname === "/ar/books" ||
       pathname.startsWith("/ar/books/") ||
       pathname.startsWith("/ar/book/") ||
       pathname.startsWith("/ar/read/") ||
@@ -94,7 +95,7 @@ export function Header() {
               </>
             ) : null}
 
-            <NavItem href="/ar/books" label="Arabic" icon={<Languages className="h-4 w-4" />} active={isActive("/ar")} />
+            <NavItem href="/ar" label="Arabic" icon={<Languages className="h-4 w-4" />} active={isActive("/ar")} />
             {inArabicSection ? (
               <>
                 <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-4 w-4" />} active={isActive("/ar/library")} />
@@ -126,7 +127,7 @@ export function Header() {
           </>
         ) : null}
 
-        <NavItem href="/ar/books" label="Arabic" icon={<Languages className="h-4 w-4" />} active={isActive("/ar")} />
+        <NavItem href="/ar" label="Arabic" icon={<Languages className="h-4 w-4" />} active={isActive("/ar")} />
         {inArabicSection ? (
           <>
             <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-4 w-4" />} active={isActive("/ar/library")} />
