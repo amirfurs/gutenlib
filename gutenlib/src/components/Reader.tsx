@@ -661,7 +661,7 @@ export function Reader({ id }: { id: string }) {
       </div>
 
       <div className="mt-6 text-xs text-zinc-500">
-        Text served via Gutendex formats. Always verify licensing/copyright on Gutenberg.
+        Public domain library edition. Free and open access for personal reading and study.
       </div>
     </main>
   );

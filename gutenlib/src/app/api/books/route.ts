@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const rawLang = url.searchParams.get("languages");
   const languages = rawLang && rawLang !== "all" ? rawLang : "all";
 
-  // 1. Primary: Official Project Gutenberg Search (covers all 79,700+ books, never blocked, 250ms)
+  // 1. Primary: Direct official catalog search (covers all 79,700+ books, never blocked, 250ms)
   try {
     const officialData = await fetchOfficialGutenbergBooks({
       search,

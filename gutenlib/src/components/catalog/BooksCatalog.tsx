@@ -97,7 +97,7 @@ export function BooksCatalog({
       if (currentLang && currentLang !== "all") qs.set("languages", currentLang);
       if (currentPage > 1) qs.set("page", String(currentPage));
 
-      // 1. Primary: High-speed App API (/api/books) powered by official Project Gutenberg (covers 79,700+ books, 250ms, no CORS/Cloudflare blocks)
+      // 1. Primary: High-speed App API (/api/books) (covers 79,700+ books, 250ms, no CORS/Cloudflare blocks)
       try {
         const proxyUrl = `/api/books?${qs.toString()}`;
         const res = await fetch(proxyUrl, { signal: controller.signal });
@@ -234,7 +234,7 @@ export function BooksCatalog({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Project Gutenberg Library</h1>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Classic Library</h1>
             {isLive ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -384,7 +384,7 @@ export function BooksCatalog({
       {loading && (
         <div className="flex items-center justify-center gap-2 py-4 text-xs font-medium text-emerald-400">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Searching 70,000+ Project Gutenberg books...</span>
+          <span>Searching 70,000+ classic books...</span>
         </div>
       )}
 

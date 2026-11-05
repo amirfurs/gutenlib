@@ -7,7 +7,7 @@
 
 ## 🌟 Overview
 
-**Gutenlib** bridges timeless literature with real-time human connection. It provides instant access to over 70,000 public domain English classics (via Project Gutenberg & Gutendex) and tens of thousands of classical Arabic texts, complemented by low-latency **WebRTC collaborative voice rooms** for synchronized read-aloud sessions, book clubs, and study groups.
+**Gutenlib** bridges timeless literature with real-time human connection. It provides instant access to over 70,000 public domain English classics and tens of thousands of classical Arabic texts, complemented by low-latency **WebRTC collaborative voice rooms** for synchronized read-aloud sessions, book clubs, and study groups.
 
 Designed with meticulous attention to detail, Gutenlib delivers tactile micro-interactions, responsive typography, and mobile-first ergonomics across phones, tablets, and desktops.
 
@@ -21,7 +21,7 @@ Designed with meticulous attention to detail, Gutenlib delivers tactile micro-in
 * **Offline-First Reading State:** Automatically saves reading progress, last-read page, and completed titles to local storage.
 
 ### 🌍 Dual Classical Catalogs (English & Arabic)
-* **English Catalog (Project Gutenberg):**
+* **English Catalog (World Classics):**
   * Instant typeahead search with fast debounce across 70,000+ titles and authors.
   * Curated subjects and topics navigation.
   * Direct downloads in EPUB and TXT formats.
@@ -34,7 +34,7 @@ Designed with meticulous attention to detail, Gutenlib delivers tactile micro-in
 * **Real-Time Audio Sessions:** Crystal-clear peer-to-peer audio reading groups with low latency.
 * **Role-Based Controls:** Host, Speaker, and Listener roles with an interactive mic request ("raise hand") and moderation system.
 * **Live Reading Synchronization:**
-  * **Shared Book Picker:** Host can select any Gutenberg or Arabic book for the room.
+  * **Shared Book Picker:** Host can select any classic or Arabic book for the room.
   * **Progress Sync:** Live chunk-by-chunk synchronized reading across all participants.
   * **Broadcast Highlights:** Host highlights broadcast instantaneously to all listeners in the room.
   * **In-Room Chat:** Persistent real-time text chat alongside voice streaming.
@@ -69,8 +69,8 @@ Designed with meticulous attention to detail, Gutenlib delivers tactile micro-in
 | **Framework** | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) |
 | **UI & Styling** | React 19, [Tailwind CSS](https://tailwindcss.com/), [Lucide React Icons](https://lucide.dev/) |
 | **Voice & Signaling** | Native WebRTC, WebSocket Signaling Server (`ws`), ICE / STUN / TURN fallback |
-| **Book Parsers** | [ePub.js](https://github.com/futurepress/epub.js), Custom Gutenberg Plaintext Stream Paginate |
-| **Data & APIs** | Gutendex API, Arabic Book Library (ABL gRPC/REST proxy) |
+| **Book Parsers** | [ePub.js](https://github.com/futurepress/epub.js), Custom Plaintext Stream Paginate |
+| **Data & APIs** | Catalog APIs, Arabic Book Library (ABL gRPC/REST proxy) |
 | **Storage** | IndexedDB, LocalStorage, Local Analytics Engine |
 | **Testing** | Node.js Test Runner, Headless Chrome DevTools Protocol Emulation |
 
@@ -216,4 +216,4 @@ npm start
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-Public domain texts provided via [Project Gutenberg](https://www.gutenberg.org/) and [ABLibrary](https://ablibrary.net/).
+Public domain texts provided for free and open educational reading.

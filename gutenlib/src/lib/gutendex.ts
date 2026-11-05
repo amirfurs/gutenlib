@@ -434,11 +434,11 @@ export function getFallbackBook(id: string | number): GutendexBook {
 
   return {
     id: numId || 0,
-    title: `Project Gutenberg Book #${id}`,
-    authors: [{ name: "Project Gutenberg Author", birth_year: null, death_year: null }],
+    title: `Book #${id}`,
+    authors: [{ name: "Classic Author", birth_year: null, death_year: null }],
     translators: [],
     subjects: ["Classical Literature"],
-    bookshelves: ["Project Gutenberg"],
+    bookshelves: ["Classic Books"],
     languages: ["en"],
     copyright: false,
     media_type: "Text",

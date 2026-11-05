@@ -19,7 +19,7 @@ export default function BooksError({
       <div className="rounded-2xl bg-white/[0.03] p-8 ring-1 ring-white/10">
         <h2 className="text-xl font-bold text-white">Temporary Catalog Disruption</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          The upstream Project Gutenberg catalog is taking longer than usual to respond.
+          The upstream library catalog is taking longer than usual to respond.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <button

@@ -19,12 +19,12 @@ export function BookDetailClient({ initialBook, isInitialDegraded }: BookDetailC
 
   // In the browser, fetch the live metadata via /api/book/[id] if initially degraded
   useEffect(() => {
-    if (isInitialDegraded || book.title.startsWith("Project Gutenberg Book #")) {
+    if (isInitialDegraded || book.title.startsWith("Project Gutenberg Book #") || book.title.startsWith("Book #")) {
       setHydrating(true);
       fetch(`/api/book/${initialBook.id}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((data: GutendexBook | null) => {
-          if (data && data.title && !data.title.startsWith("Project Gutenberg Book #")) {
+          if (data && data.title && !data.title.startsWith("Project Gutenberg Book #") && !data.title.startsWith("Book #")) {
             setBook(data);
             setIsDegraded(false);
           }
@@ -62,7 +62,7 @@ export function BookDetailClient({ initialBook, isInitialDegraded }: BookDetailC
 
       {isDegraded && (
         <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200 ring-1 ring-amber-500/20">
-          <span>📚 Showing cached Project Gutenberg details while upstream metadata syncs. Reading in-app and downloads remain fully operational.</span>
+          <span>📚 Showing cached book details while upstream metadata syncs. Reading in-app and downloads remain fully operational.</span>
         </div>
       )}
 

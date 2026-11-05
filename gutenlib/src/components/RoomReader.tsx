@@ -303,7 +303,7 @@ export function RoomReader({
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent mb-3" />
         <div className="text-sm font-medium text-zinc-300">Loading book for the room…</div>
-        <div className="text-xs text-zinc-500 mt-1">Fetching text from Gutenberg archive</div>
+        <div className="text-xs text-zinc-500 mt-1">Fetching text from library archive...</div>
       </div>
     );
   }

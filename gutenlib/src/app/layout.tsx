@@ -5,7 +5,7 @@ import { AnalyticsBeacon } from "@/components/AnalyticsBeacon";
 
 export const metadata: Metadata = {
   title: "GutenLib",
-  description: "Book library powered by Gutendex (Project Gutenberg catalog)",
+  description: "Explore classic literature and world books with synchronized voice reading rooms",
 };
 
 export const viewport: Viewport = {

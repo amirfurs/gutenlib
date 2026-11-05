@@ -66,7 +66,7 @@ export default async function ArabicBookPage({ params }: { params: Promise<{ id:
               </a>
             ) : null}
             <Link href="/books" className="pressable min-h-[44px] inline-flex items-center rounded-xl bg-white/10 px-4 py-2 text-xs sm:text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15">
-              قسم Gutenberg
+              الكتب العالمية
             </Link>
           </div>
 

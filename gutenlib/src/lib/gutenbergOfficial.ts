@@ -9,12 +9,12 @@ export interface GutenbergSearchParams {
 }
 
 /**
- * High-speed, highly reliable search & catalog fetcher directly from Project Gutenberg's
- * official Apache web servers (www.gutenberg.org).
+ * High-speed, highly reliable search & catalog fetcher directly from the
+ * official public archive web servers.
  *
  * Benefits:
  * - Has 100% uptime and covers all 79,700+ public domain books.
- * - Does NOT block Vercel / AWS data center IPs (unlike gutendex.com Cloudflare WAF).
+ * - Does NOT block Vercel / AWS data center IPs (unlike third-party Cloudflare WAF).
  * - Responds in ~250-600ms with full pagination and download rankings.
  */
 export async function fetchOfficialGutenbergBooks({
@@ -100,7 +100,7 @@ export async function fetchOfficialGutenbergBooks({
         authors: [{ name: author, birth_year: null, death_year: null }],
         translators: [],
         subjects: topic ? [topic] : ["Classical Literature"],
-        bookshelves: ["Project Gutenberg"],
+        bookshelves: ["Classic Books"],
         languages: languages && languages !== "all" ? [languages] : ["en"],
         copyright: false,
         media_type: "Text",
@@ -146,7 +146,7 @@ export async function fetchOfficialGutenbergBook(id: string | number): Promise<G
 
   const html = await res.text();
 
-  let title = `Project Gutenberg Book #${numId}`;
+  let title = `Book #${numId}`;
   let author = "Unknown Author";
 
   const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i);
@@ -182,7 +182,7 @@ export async function fetchOfficialGutenbergBook(id: string | number): Promise<G
     authors: [{ name: author, birth_year: null, death_year: null }],
     translators: [],
     subjects: subjects.length > 0 ? subjects : ["Classical Literature"],
-    bookshelves: ["Project Gutenberg"],
+    bookshelves: ["Classic Books"],
     languages: ["en"],
     copyright: false,
     media_type: "Text",
