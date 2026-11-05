@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gutendex, type GutendexList } from "@/lib/gutendex";
+import { gutendex, getCuratedBooksList, type GutendexList } from "@/lib/gutendex";
 
 function norm(s: string) {
   return s.toLowerCase().trim();
@@ -69,11 +69,35 @@ export async function GET(req: Request) {
       }
     );
   } catch {
+    const fallback = getCuratedBooksList({ search: q });
+    const books = (fallback.results ?? []).slice(0, 8).map((b) => ({
+      id: b.id,
+      title: b.title,
+      author: b.authors?.[0]?.name ?? "Unknown",
+      cover: b.formats?.["image/jpeg"] ?? null,
+    }));
+
+    const authors = Array.from(
+      new Set(
+        (fallback.results ?? [])
+          .flatMap((b) => b.authors.map((a) => a.name))
+          .filter((name) => norm(name).includes(norm(q)))
+      )
+    ).slice(0, 5);
+
+    const topics = Array.from(
+      new Set(
+        (fallback.results ?? [])
+          .flatMap((b) => b.subjects)
+          .filter((s) => norm(s).includes(norm(q)))
+      )
+    ).slice(0, 6);
+
     return NextResponse.json(
-      { q, books: [], authors: [], topics: [] },
+      { q, books, authors, topics },
       {
         headers: {
-          "Cache-Control": "no-store",
+          "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
         },
       }
     );

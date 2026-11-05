@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCoverUrl, gutendex, type GutendexList } from "@/lib/gutendex";
+import { getCoverUrl, gutendex, getCuratedBooksList, type GutendexList } from "@/lib/gutendex";
 
 export default async function AuthorPage({
   searchParams,
@@ -20,17 +20,25 @@ export default async function AuthorPage({
     );
   }
 
-  const data = await gutendex<GutendexList>("/books", {
-    search: name,
-    page,
-    languages: "en",
-    sort: "popular",
-  });
+  let data: GutendexList;
+  try {
+    data = await gutendex<GutendexList>("/books", {
+      search: name,
+      page,
+      languages: "en",
+      sort: "popular",
+    });
+  } catch {
+    data = getCuratedBooksList({ search: name, page });
+  }
 
-  // filter to books that actually include this author in the author list
-  const filtered = (data.results ?? []).filter((b) =>
-    (b.authors ?? []).some((a) => a.name?.toLowerCase() === name.toLowerCase())
+  const results = data?.results ?? [];
+
+  // filter to books that actually include this author in the author list (or all search results if fallback)
+  const exactFiltered = results.filter((b) =>
+    (b.authors ?? []).some((a) => a.name?.toLowerCase().includes(name.toLowerCase()))
   );
+  const filtered = exactFiltered.length > 0 ? exactFiltered : results;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">

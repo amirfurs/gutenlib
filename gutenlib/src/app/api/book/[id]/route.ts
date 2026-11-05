@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gutendex, type GutendexBook, type GutendexList } from "@/lib/gutendex";
+import { gutendex, getFallbackBook, type GutendexBook, type GutendexList } from "@/lib/gutendex";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,9 +12,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       },
     });
   } catch {
-    // Resilient fallback: Gutendex CDN caches list endpoints with ?ids= very aggressively
     try {
-      const list = await gutendex<GutendexList>("/books", { ids: id }, 7000);
+      const list = await gutendex<GutendexList>("/books", { ids: id }, 4000);
       const book = list.results?.[0];
       if (book) {
         return NextResponse.json(book, {
@@ -25,6 +24,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       }
     } catch {
       // ignore
+    }
+
+    const fallback = getFallbackBook(id);
+    if (fallback) {
+      return NextResponse.json(fallback, {
+        headers: {
+          "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400",
+        },
+      });
     }
 
     return NextResponse.json({ error: "Book not found or upstream unavailable" }, { status: 404 });

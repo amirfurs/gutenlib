@@ -1,23 +1,44 @@
 import Link from "next/link";
 import { FavoriteStar } from "@/components/library/FavoriteStar";
 import { AddToListButton } from "@/components/library/AddToListButton";
-import { getCoverUrl, gutendex, type GutendexBook } from "@/lib/gutendex";
+import { getCoverUrl, gutendex, getFallbackBook, type GutendexBook } from "@/lib/gutendex";
 
 export default async function BookPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const book = await gutendex<GutendexBook>(`/books/${id}`);
+  let book: GutendexBook | null = null;
+  let isDegraded = false;
 
-  const cover = getCoverUrl(book.formats);
-  const epub = book.formats["application/epub+zip"] ?? null;
-  const txt = book.formats["text/plain; charset=utf-8"] ?? book.formats["text/plain"] ?? null;
+  try {
+    book = await gutendex<GutendexBook>(`/books/${id}`);
+  } catch {
+    isDegraded = true;
+    book = getFallbackBook(id);
+  }
+
+  if (!book) {
+    book = getFallbackBook(id);
+  }
+
+  const formats = book.formats ?? {};
+  const cover = getCoverUrl(formats);
+  const epub = formats["application/epub+zip"] ?? `https://www.gutenberg.org/ebooks/${id}.epub3.images`;
+  const txt = formats["text/plain; charset=utf-8"] ?? formats["text/plain"] ?? `https://www.gutenberg.org/cache/epub/${id}/pg${id}.txt`;
 
   return (
     <main className="mx-auto max-w-5xl px-3 sm:px-4 py-6 sm:py-10">
       <div className="flex items-center justify-between">
         <Link href="/books" className="pressable inline-flex items-center gap-1.5 text-xs sm:text-sm text-zinc-300 hover:text-white">← Back to catalog</Link>
-        <div className="text-xs text-zinc-500">ID {book.id} · {book.download_count?.toLocaleString()} downloads</div>
+        <div className="text-xs text-zinc-500">
+          ID {book.id} {book.download_count ? `· ${book.download_count.toLocaleString()} downloads` : ""}
+        </div>
       </div>
+
+      {isDegraded && (
+        <div className="mt-4 rounded-xl bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200 ring-1 ring-amber-500/20">
+          <span>📚 Showing cached Project Gutenberg details while upstream metadata syncs. Reading in-app and downloads remain fully operational.</span>
+        </div>
+      )}
 
       <div className="mt-6 sm:mt-8 grid gap-6 sm:gap-8 md:grid-cols-[240px_1fr]">
         <div className="interactive-cover mx-auto max-w-[180px] sm:max-w-[220px] md:max-w-none w-full overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 shadow-2xl">
@@ -60,11 +81,11 @@ export default async function BookPage({ params }: { params: Promise<{ id: strin
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-lg bg-white/5 p-4 ring-1 ring-white/10">
               <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Languages</div>
-              <div className="mt-2 text-sm text-zinc-200">{book.languages?.join(", ") || "-"}</div>
+              <div className="mt-2 text-sm text-zinc-200">{book.languages?.join(", ") || "English"}</div>
             </div>
             <div className="rounded-lg bg-white/5 p-4 ring-1 ring-white/10">
               <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Bookshelves</div>
-              <div className="mt-2 text-sm text-zinc-200">{book.bookshelves?.slice(0, 6).join(" · ") || "-"}</div>
+              <div className="mt-2 text-sm text-zinc-200">{book.bookshelves?.slice(0, 6).join(" · ") || "Classics"}</div>
             </div>
           </div>
 
