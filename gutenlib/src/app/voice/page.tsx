@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, BookOpen, Headphones, Link2, LockKeyhole, Mic2, Radio, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, Headphones, Link2, LockKeyhole, Mic } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getVoiceServerUrl } from "@/lib/voice/config";
 import { storage } from "@/lib/voice/useVoiceRoom";
@@ -13,37 +13,46 @@ export default function VoicePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const creating = useRef(false);
-  useEffect(() => { setName(storage.get("gutenlib.voice.name")); }, []);
-  const [room, setRoom] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setName(storage.get("gutenlib.voice.name"));
+  }, []);
+
+  const [room, setRoom] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   async function createRoom(event: React.FormEvent) {
-    event.preventDefault(); setError("");
+    event.preventDefault();
+    setError("");
     if (creating.current) return;
-    if (!name.trim() || !room.trim()) { setError("أدخل اسمك واسم الغرفة للبدء."); return; }
-    creating.current = true; setLoading(true);
+    if (!name.trim() || !room.trim()) {
+      setError("أدخل اسمك وعنوان الجلسة للبدء.");
+      return;
+    }
+    creating.current = true;
+    setLoading(true);
+
     try {
       const payload = JSON.stringify({ hostDisplayName: name.trim(), roomName: room.trim() });
       const headers = { "Content-Type": "application/json" };
       let response: Response | null = null;
 
-      // 1. Try relative /rooms (same-origin Next.js proxy; avoids cross-port, CORS, PNA, and firewall issues on phones)
+      // 1. Same-origin Next.js proxy
       try {
         const r = await fetch("/rooms", { method: "POST", headers, body: payload, signal: AbortSignal.timeout(6000) });
         if (r.ok) response = r;
-      } catch {
-        // Fallback
-      }
+      } catch {}
 
-      // 2. Try relative /api/rooms
+      // 2. /api/rooms
       if (!response) {
         try {
           const r = await fetch("/api/rooms", { method: "POST", headers, body: payload, signal: AbortSignal.timeout(6000) });
           if (r.ok) response = r;
-        } catch {
-          // Fallback
-        }
+        } catch {}
       }
 
-      // 3. Fallback to direct voice server URL
+      // 3. Direct voice server
       if (!response) {
         const serverUrl = getVoiceServerUrl();
         response = await fetch(`${serverUrl}/rooms`, {
@@ -54,8 +63,9 @@ export default function VoicePage() {
         });
       }
 
-      const data = await response.json() as RoomResponse & { error?: string };
+      const data = (await response.json()) as RoomResponse & { error?: string };
       if (!response.ok) throw new Error(data.error ?? "CREATE_FAILED");
+
       storage.set(`gutenlib.voice.hostSecret.${data.inviteToken}`, data.hostSecret);
       storage.set(`gutenlib.voice.hostName.${data.inviteToken}`, data.hostDisplayName);
       storage.set(`gutenlib.voice.roomName.${data.inviteToken}`, data.roomName);
@@ -63,15 +73,120 @@ export default function VoicePage() {
       router.push(`/room/${data.inviteToken}?host=1`);
     } catch (err) {
       console.error("[Voice] Room creation failed:", err);
-      setError("تعذر إنشاء الغرفة. تحقق من تشغيل خادم الصوت أو من اتصالك ثم حاول مجددًا.");
-    } finally { creating.current = false; setLoading(false); }
+      setError("تعذر إنشاء الجلسة. تحقق من تشغيل خادم الصوت أو من اتصالك ثم حاول مجددًا.");
+    } finally {
+      creating.current = false;
+      setLoading(false);
+    }
   }
-  return <main className="voice-landing" dir="rtl">
-    <div className="voice-landing__nav"><Link href="/" className="pressable voice-wordmark">Guten<span>lib</span></Link><Link href="/" className="pressable quiet-link"><ArrowLeft size={16} /> المكتبة</Link></div>
-    <section className="voice-landing__hero"><div className="voice-landing__copy"><div className="eyebrow"><Radio size={14} /> جلسات قراءة حيّة</div><h1>اقرأوا بصوتٍ واحد.</h1><p>غرفة هادئة للقراءة الجماعية، بصوت واضح وتحكم بسيط للمضيف. شارك الرابط وابدأ خلال لحظات.</p><div className="voice-landing__notes"><span><LockKeyhole size={15} /> جلسات خاصة بالرابط</span><span><Headphones size={15} /> صوت مباشر عبر المتصفح</span></div></div>
-      <form className="create-card shadow-2xl backdrop-blur-md" onSubmit={createRoom}><div className="create-card__heading"><span className="icon-tile shadow-sm"><Mic2 size={19} /></span><div><span className="card-kicker">ابدأ جلسة</span><h2>أنشئ غرفة صوتية</h2></div></div><label htmlFor="host-name">اسمك</label><input id="host-name" value={name} onChange={e => setName(e.target.value)} placeholder="مثال: أمير" autoComplete="name" /><label htmlFor="room-name">اسم الغرفة</label><input id="room-name" value={room} onChange={e => setRoom(e.target.value)} placeholder="جلسة قراءة المساء" /><button className="primary-action" disabled={loading}>{loading ? "جاري الإنشاء…" : "إنشاء الغرفة"}<ArrowLeft size={17} /></button>{error && <p className="form-error" role="alert">{error}</p>}<p className="create-card__hint">سيظهر لك رابط دعوة بعد الإنشاء. لا نطلب حسابًا.</p></form>
-    </section>
-    <section className="voice-landing__features"><Feature icon={<Users />} title="مساحة صغيرة" text="حتى ٨ مشاركين حتى يبقى الحوار واضحًا." /><Feature icon={<BookOpen />} title="الكتاب حاضر" text="اختَر كتابًا ودع المضيف يزامن الصفحات للجميع." /><Feature icon={<Link2 />} title="رابط واحد" text="أرسله لمن تريد، والضيف يدخل باسمه فقط." /></section><p className="voice-landing__footer"><Sparkles size={14} /> Gutenlib Voice · للقراءة معًا</p>
-  </main>;
+
+  return (
+    <main className="voice-landing" dir="rtl">
+      <div className="voice-landing__nav">
+        <Link href="/" className="voice-wordmark">
+          Guten<span>lib</span>
+        </Link>
+        <span className="voice-landing__subnav">غرف القراءة</span>
+        <Link href="/" className="quiet-link">
+          <ArrowLeft size={16} strokeWidth={1.5} /> المكتبة
+        </Link>
+      </div>
+
+      <section className="voice-landing__hero">
+        <div className="voice-landing__copy">
+          <span className="eyebrow">قراءة مشتركة متزامنة</span>
+          <h1>اقرأوا التراث بصوتٍ واحد.</h1>
+          <p>
+            مساحة هادئة لمجموعات القراءة وحلقات الاستماع. يختار القارئ كتابًا من التراث، وتتحرك الصفحات مع صوته لدى
+            جميع المستمعين تلقائيًا وبصوت واضح.
+          </p>
+          <div className="voice-landing__notes">
+            <span>
+              <LockKeyhole size={15} strokeWidth={1.5} /> جلسات خاصة بالرابط
+            </span>
+            <span>
+              <Headphones size={15} strokeWidth={1.5} /> صوت مباشر عبر المتصفح
+            </span>
+          </div>
+        </div>
+
+        <form className="create-card" onSubmit={createRoom}>
+          <div className="create-card__heading">
+            <span className="icon-tile">
+              <Mic size={18} strokeWidth={1.5} />
+            </span>
+            <div>
+              <span className="card-kicker">جلسة جديدة</span>
+              <h2>إنشاء غرفة قراءة</h2>
+            </div>
+          </div>
+
+          <label htmlFor="host-name">اسم القارئ</label>
+          <input
+            id="host-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="مثال: يحيى"
+            autoComplete="name"
+            maxLength={32}
+          />
+
+          <label htmlFor="room-name">عنوان الجلسة</label>
+          <input
+            id="room-name"
+            value={room}
+            onChange={(e) => setRoom(e.target.value)}
+            placeholder="مثال: قراءة في ديوان المتنبي"
+            maxLength={60}
+          />
+
+          <button className="primary-action" disabled={loading}>
+            <span>{loading ? "جاري الإنشاء…" : "بدء الجلسة"}</span>
+            <ArrowLeft size={16} strokeWidth={1.5} />
+          </button>
+
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <p className="create-card__hint">يظهر رابط الدعوة للمشاركين بعد الإنشاء مباشرة دون اشتراك.</p>
+        </form>
+      </section>
+
+      <section className="voice-landing__features">
+        <Feature
+          icon={<BookOpen size={16} strokeWidth={1.5} />}
+          title="مزامنة فورية للصفحات"
+          text="تتبع المجموعة تقليب الصفحات مع المضيف تلقائيًا دون تشتت."
+        />
+        <Feature
+          icon={<Headphones size={16} strokeWidth={1.5} />}
+          title="صوت هادئ ونقي"
+          text="قنوات صوتية موجهة للقراءة بهدوء ودون ضجيج، مع ضبط تلقائي للمستويات."
+        />
+        <Feature
+          icon={<Link2 size={16} strokeWidth={1.5} />}
+          title="دعوة برابط واحد"
+          text="شارك الرابط مع رفاق القراءة، ليدخل كل مستمع باسمه فورًا."
+        />
+      </section>
+
+      <footer className="voice-landing__footer">
+        <span>Gutenlib · للقراءة الجماعية المتزامنة</span>
+      </footer>
+    </main>
+  );
 }
-function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <article className="interactive-card voice-feature rounded-xl p-3"><span className="feature-icon">{icon}</span><div><h3>{title}</h3><p>{text}</p></div></article>; }
+
+function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <article className="voice-feature">
+      <span className="feature-icon">{icon}</span>
+      <div>
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
+    </article>
+  );
+}

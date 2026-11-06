@@ -1,24 +1,67 @@
-/* Hallmark · voice workspace · theme: existing dark / emerald · scoped tokens */
+/* Archival Reading Sanctuary · Unslop Craft tokens
+ * Philosophy: Quiet Chrome, Rich Moments, 4px Grid, Archival Neutrals
+ */
 :root {
-  --voice-paper: oklch(15% 0.008 260);
-  --voice-surface: oklch(19% 0.008 260);
-  --voice-raised: oklch(23% 0.009 260);
-  --voice-ink: oklch(96% 0.004 250);
-  --voice-muted: oklch(74% 0.012 250);
-  --voice-rule: oklch(32% 0.01 260);
-  --voice-accent: oklch(78% 0.145 164);
-  --voice-accent-ink: oklch(18% 0.035 164);
-  --voice-accent-soft: oklch(25% 0.04 164);
-  --voice-danger: oklch(79% 0.12 25);
-  --voice-danger-soft: oklch(25% 0.04 25);
-  --voice-warning: oklch(83% 0.12 85);
-  --voice-backdrop: oklch(5% 0 0 / 0.75);
-  --voice-focus: oklch(94% 0.06 85);
-  --voice-font: "Segoe UI", Tahoma, Arial, sans-serif;
+  /* Archival Neutral Ramp */
+  --voice-paper: #111214;          /* Deep warm ink background */
+  --voice-surface: #17181b;        /* Quiet reading desk surface */
+  --voice-raised: #202226;         /* Raised cards & control tiles */
+  --voice-raised-hover: #272a2f;   /* Deliberate surface step on hover */
+  
+  /* Hairlines & Rules */
+  --voice-rule: rgba(255, 255, 255, 0.08); /* 8% hairline */
+  --voice-rule-subtle: rgba(255, 255, 255, 0.04);
+  --voice-rule-focus: rgba(255, 255, 255, 0.22);
+  
+  /* 3 Strict Text Roles */
+  --voice-ink: #eae8e4;            /* Primary: Unbleached parchment text */
+  --voice-ink-secondary: #9d9a93;  /* Secondary: Soft pencil grey */
+  --voice-muted: #686660;          /* Muted: Faded stamp/meta */
+
+  /* Single Restrained Accent: Sage Ink */
+  --voice-accent: #5fa882;         /* Restrained sage green (active mic/sync only) */
+  --voice-accent-ink: #0d1a13;     /* Contrast text on solid accent */
+  --voice-accent-soft: rgba(95, 168, 130, 0.12); /* Subtle tint */
+  
+  /* Semantic (Quiet & Subdued) */
+  --voice-danger: #d46860;         /* Subdued brick red */
+  --voice-danger-soft: rgba(212, 104, 96, 0.12);
+  --voice-warning: #d99f57;        /* Warm amber */
+  --voice-warning-soft: rgba(217, 159, 87, 0.12);
+  --voice-backdrop: rgba(10, 11, 13, 0.82);
+
+  /* Typography */
+  --voice-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Arabic", sans-serif;
+  --voice-book-font: "Amiri", "Traditional Arabic", "Georgia", "Cormorant Garamond", serif;
+  --voice-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Strict 4px Scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Back-compat aliases */
   --voice-space-xs: 8px;
   --voice-space-sm: 12px;
   --voice-space-md: 16px;
   --voice-space-lg: 24px;
   --voice-space-xl: 32px;
-  --voice-radius: 12px;
+
+  /* Nested Radii Formula: Router = Rinner + Padding */
+  --voice-radius-lg: 12px;         /* Outer panels/drawers */
+  --voice-radius: 8px;             /* Cards, dialogs, lists */
+  --voice-radius-sm: 6px;          /* Buttons, inputs, keycaps */
+  --voice-radius-pill: 9999px;     /* Status dots & tiny tags only */
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-drawer: 220ms;
 }

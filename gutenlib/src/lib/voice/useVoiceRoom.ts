@@ -5,12 +5,24 @@ import { io, type Socket } from "socket.io-client";
 import { VoiceEngine, type PeerHealth } from "./engine";
 import { getVoiceServerUrl } from "./config";
 import { safeUUID } from "./uuid";
-import type { ActiveBook, ChatMessage, JoinedPayload, PeerInfo, ReadingState, SessionPhase, VoiceRole } from "./types";
+import type { ActiveBook, BookQuotePayload, ChatMessage, JoinedPayload, PeerInfo, ReadingState, SessionPhase, VoiceRole } from "./types";
 
 export const storage = {
   get(key: string) { try { return localStorage.getItem(key) ?? ""; } catch { return ""; } },
   set(key: string, value: string) { try { localStorage.setItem(key, value); return true; } catch { return false; } },
 };
+
+function parseChatMessage(msg: ChatMessage): ChatMessage {
+  if (msg && typeof msg.text === "string" && msg.text.startsWith("__quote__:")) {
+    try {
+      const data = JSON.parse(msg.text.slice(10));
+      return { ...msg, isQuote: true, quoteData: data };
+    } catch {
+      return msg;
+    }
+  }
+  return msg;
+}
 const errors: Record<string, string> = {
   ROOM_NOT_FOUND: "هذه الغرفة غير متاحة أو انتهت. اطلب رابطًا جديدًا من المضيف.",
   ROOM_EXPIRED: "انتهت مدة الغرفة. يمكنك إنشاء جلسة جديدة.",
@@ -133,8 +145,11 @@ export function useVoiceRoom(token: string) {
     client.on("book-updated", ({ activeBook }: { activeBook: ActiveBook }) => setState(s => ({ ...s, book: activeBook, highlight: "" })));
     client.on("reading-updated", ({ reading }: { reading: ReadingState }) => setState(s => ({ ...s, reading })));
     client.on("highlight-updated", ({ highlight }: { highlight: { text: string } | null }) => setState(s => ({ ...s, highlight: highlight?.text ?? "" })));
-    client.on("chat-history", ({ messages }: { messages: ChatMessage[] }) => setState(s => ({ ...s, messages })));
-    client.on("chat-message", (message: ChatMessage) => setState(s => ({ ...s, messages: s.messages.some(m => m.id === message.id) ? s.messages : [...s.messages, message].slice(-100) })));
+    client.on("chat-history", ({ messages }: { messages: ChatMessage[] }) => setState(s => ({ ...s, messages: (messages ?? []).map(parseChatMessage) })));
+    client.on("chat-message", (message: ChatMessage) => {
+      const parsed = parseChatMessage(message);
+      setState(s => ({ ...s, messages: s.messages.some(m => m.id === parsed.id) ? s.messages : [...s.messages, parsed].slice(-100) }));
+    });
     client.on("control-error", ({ error }: { error: string }) => setState(s => ({ ...s, error: messageFor(error) })));
     client.on("join-error", ({ error }: { error: string }) => {
       if (error === "HOST_NOT_CONNECTED") {
@@ -157,14 +172,20 @@ export function useVoiceRoom(token: string) {
     startDeadline(); client.connect();
   }, [dispose, mute, token]);
 
-  const toggleMic = async () => {
+  const toggleMic = async (preferredDeviceId?: string) => {
     if (media.current) { mute(); return; }
     if (!connected.current || role.current === "listener" || micPending.current) return;
     micPending.current = true; setMicBusy(true);
     const requestEpoch = ++epoch.current;
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error("UNSUPPORTED");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        ...(preferredDeviceId ? { deviceId: { exact: preferredDeviceId } } : {}),
+      };
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: false });
       if (requestEpoch !== epoch.current || !connected.current || (role.current as VoiceRole) === "listener") { stream.getTracks().forEach(t => t.stop()); return; }
       media.current = stream;
       stream.getAudioTracks()[0].onended = mute;
@@ -193,7 +214,11 @@ export function useVoiceRoom(token: string) {
       return reply.ok;
     } catch { setState(s => ({ ...s, error: "لم يتم تأكيد إرسال الرسالة. تحقق من الاتصال قبل المحاولة مجددًا." })); return false; }
   };
-  return { ...state, streams, health, micOn, micBusy, localStream, join, toggleMic, hostAction, sendMessage,
+  const sendQuote = async (payload: BookQuotePayload): Promise<boolean> => {
+    const serialized = JSON.stringify(payload);
+    return sendMessage(`__quote__:${serialized}`);
+  };
+  return { ...state, streams, health, micOn, micBusy, localStream, join, toggleMic, hostAction, sendMessage, sendQuote,
     leave: () => { dispose(); setState(s => ({ ...s, phase: "left", error: "غادرت الجلسة والميكروفون مغلق." })); },
     raiseHand: () => { if (connected.current) socket.current?.emit(state.handRaised ? "cancel-request-mic" : "request-mic"); },
     dismissError: () => setState(s => ({ ...s, error: "" })),

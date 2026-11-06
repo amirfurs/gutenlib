@@ -45,5 +45,24 @@ export type JoinedPayload = {
   highlight?: { text: string } | null;
 };
 
-export type ChatMessage = { id: string; peerId: string; name: string; text: string; ts: number };
+export type ChatMessage = {
+  id: string;
+  peerId: string;
+  name: string;
+  text: string;
+  ts: number;
+  isQuote?: boolean;
+  quoteData?: {
+    text: string;
+    citation: string;
+  };
+};
+
 export type SessionPhase = "idle" | "joining" | "connected" | "reconnecting" | "left" | "ended" | "error";
+
+export type LayoutMode = "split" | "focus";
+
+export interface BookQuotePayload {
+  text: string;
+  citation: string;
+}

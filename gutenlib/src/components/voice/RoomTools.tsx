@@ -53,7 +53,7 @@ export function Modal({ title, children, onClose }: { title: string; children: R
       <div className="dialog-heading">
         <h2>{title}</h2>
         <button className="voice-btn icon-only" aria-label="إغلاق" onClick={onClose}>
-          <X size={20} />
+          <X size={16} strokeWidth={1.5} />
         </button>
       </div>
       {children}
@@ -128,8 +128,8 @@ export function BookPicker({ select, onClose }: { select: (book: NonNullable<Act
             placeholder="ابحث في المكتبة"
           />
           <button className="voice-btn primary" disabled={loading}>
-            <Search size={18} />
-            {loading ? "نبحث…" : "بحث"}
+            <Search size={16} strokeWidth={1.5} />
+            <span>{loading ? "نبحث…" : "بحث"}</span>
           </button>
         </div>
       </form>
