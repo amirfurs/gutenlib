@@ -101,6 +101,8 @@ function makeRoom(customInviteToken, customHostSecret) {
     expiresAt: now() + ROOM_TTL_MS,
     hostPeerId: null,
     hostGraceTimer: null,
+    activeReaderPeerId: null,
+    batonQueue: [],
     activeBook: null, // { id, title, author, coverUrl }
     reading: { kind: "chunk", index: 0 },
     messages: [], // { id, peerId, name, text, ts }
@@ -373,6 +375,9 @@ io.on("connection", (socket) => {
 
     if (role === "host") {
       room.hostPeerId = peerId;
+      if (!room.activeReaderPeerId) {
+        room.activeReaderPeerId = peerId;
+      }
       if (room.hostGraceTimer) {
         clearTimeout(room.hostGraceTimer);
         room.hostGraceTimer = null;
@@ -413,6 +418,8 @@ io.on("connection", (socket) => {
       selfPeerId: peerId,
       role,
       hostPeerId: room.hostPeerId,
+      activeReaderPeerId: room.activeReaderPeerId || room.hostPeerId,
+      batonQueue: room.batonQueue || [],
       handRaised: participant.handRaised,
       roomName: room.roomName,
       activeBook: room.activeBook,
@@ -545,7 +552,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -589,7 +596,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -611,7 +618,9 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    const isHost = peerId === room.hostPeerId && (hostSecret === room.hostSecret || equalSecret(hostSecret, room.hostSecret));
+    const isReader = peerId === room.activeReaderPeerId;
+    if (!isHost && !isReader) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -636,7 +645,9 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    const isHost = peerId === room.hostPeerId && (hostSecret === room.hostSecret || equalSecret(hostSecret, room.hostSecret));
+    const isReader = peerId === room.activeReaderPeerId;
+    if (!isHost && !isReader) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -661,7 +672,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -679,7 +690,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -697,7 +708,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -719,7 +730,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -736,6 +747,59 @@ io.on("connection", (socket) => {
     io.to(inviteToken).emit("role-updated", { peerId: targetPeerId, role: p.role });
   });
 
+  socket.on("host-pass-baton", ({ targetPeerId, hostSecret }) => {
+    const inviteToken = socket.data.inviteToken;
+    const peerId = socket.data.peerId;
+    if (!inviteToken) return;
+
+    const room = rooms.get(inviteToken);
+    if (!room) return;
+
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
+      socket.emit("control-error", { error: "NOT_AUTHORIZED" });
+      return;
+    }
+
+    const nextReader = targetPeerId || room.hostPeerId;
+    if (nextReader !== room.hostPeerId && !room.participants.has(nextReader)) {
+      socket.emit("control-error", { error: "PEER_NOT_FOUND" });
+      return;
+    }
+
+    room.activeReaderPeerId = nextReader;
+    room.batonQueue = room.batonQueue.filter((id) => id !== nextReader);
+    io.to(inviteToken).emit("baton-updated", {
+      activeReaderPeerId: room.activeReaderPeerId,
+      batonQueue: room.batonQueue,
+    });
+  });
+
+  socket.on("request-baton", () => {
+    const inviteToken = socket.data.inviteToken;
+    const peerId = socket.data.peerId;
+    if (!inviteToken || !peerId) return;
+
+    const room = rooms.get(inviteToken);
+    if (!room) return;
+
+    if (!room.batonQueue.includes(peerId) && room.activeReaderPeerId !== peerId) {
+      room.batonQueue.push(peerId);
+      io.to(inviteToken).emit("baton-queue-updated", { batonQueue: room.batonQueue });
+    }
+  });
+
+  socket.on("cancel-request-baton", () => {
+    const inviteToken = socket.data.inviteToken;
+    const peerId = socket.data.peerId;
+    if (!inviteToken || !peerId) return;
+
+    const room = rooms.get(inviteToken);
+    if (!room) return;
+
+    room.batonQueue = room.batonQueue.filter((id) => id !== peerId);
+    io.to(inviteToken).emit("baton-queue-updated", { batonQueue: room.batonQueue });
+  });
+
   socket.on("host-kick", ({ targetPeerId, hostSecret }) => {
     const inviteToken = socket.data.inviteToken;
     const peerId = socket.data.peerId;
@@ -744,7 +808,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -776,7 +840,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(inviteToken);
     if (!room) return;
 
-    if (peerId !== room.hostPeerId || hostSecret !== room.hostSecret) {
+    if (peerId !== room.hostPeerId || !equalSecret(hostSecret, room.hostSecret)) {
       socket.emit("control-error", { error: "NOT_AUTHORIZED" });
       return;
     }
@@ -799,6 +863,18 @@ io.on("connection", (socket) => {
     if (p.socketId !== socket.id) return;
     p.socketId = null;
     io.to(inviteToken).emit("peer-left", { peerId });
+
+    if (room.activeReaderPeerId === peerId) {
+      room.activeReaderPeerId = room.hostPeerId;
+      io.to(inviteToken).emit("baton-updated", {
+        activeReaderPeerId: room.activeReaderPeerId,
+        batonQueue: room.batonQueue,
+      });
+    }
+    if (room.batonQueue.includes(peerId)) {
+      room.batonQueue = room.batonQueue.filter((id) => id !== peerId);
+      io.to(inviteToken).emit("baton-queue-updated", { batonQueue: room.batonQueue });
+    }
 
     // For host: keep hostPeerId but if host doesn't return, end room (existing logic)
     if (peerId === room.hostPeerId) {

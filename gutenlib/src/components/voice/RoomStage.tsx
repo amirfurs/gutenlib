@@ -1,6 +1,6 @@
 "use client";
 
-import { Hand, MoreHorizontal, Shield, ShieldOff, UserRoundX, Users, X } from "lucide-react";
+import { Feather, Hand, MoreHorizontal, Shield, ShieldOff, UserRoundX, Users, X } from "lucide-react";
 import type { PeerInfo } from "@/lib/voice/types";
 import { useSpeaking } from "./RoomTools";
 import { useState } from "react";
@@ -15,9 +15,14 @@ interface RoomStageProps {
   streams: Record<string, MediaStream>;
   health: Record<string, { connection?: string; ice?: string; receiving?: boolean }>;
   isHost: boolean;
+  activeReaderId?: string;
+  batonQueue?: string[];
   onGrantMic: (peerId: string) => void;
   onRevokeMic: (peerId: string) => void;
   onKick: (peerId: string) => void;
+  onPassBaton?: (peerId: string) => void;
+  onRequestBaton?: () => void;
+  onCancelRequestBaton?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
 }
@@ -42,9 +47,14 @@ export function RoomStage({
   streams,
   health,
   isHost,
+  activeReaderId,
+  batonQueue = [],
   onGrantMic,
   onRevokeMic,
   onKick,
+  onPassBaton,
+  onRequestBaton,
+  onCancelRequestBaton,
   isMobileOpen = false,
   onCloseMobile,
 }: RoomStageProps) {
@@ -60,6 +70,9 @@ export function RoomStage({
   const handRaisers = participantList.filter((p) => p.handRaised && p.role === "listener");
 
   const selfIsSpeaker = selfRole === "host" || selfRole === "speaker";
+  const currentReaderId = activeReaderId || (isHost ? selfId : participantList.find((p) => p.role === "host")?.peerId);
+  const selfIsReader = currentReaderId === selfId;
+  const selfHasRequestedBaton = batonQueue.includes(selfId);
 
   const stageContent = (
     <aside
@@ -86,6 +99,33 @@ export function RoomStage({
           )}
         </div>
       </div>
+
+      {/* Host Baton Queue Banner */}
+      {isHost && batonQueue.length > 0 && (
+        <div className="stage-baton-queue">
+          <span className="stage-queue-kicker">
+            <Feather size={13} strokeWidth={1.5} /> طلبات المنبر للقراءة ({batonQueue.length})
+          </span>
+          {batonQueue.map((requesterId) => {
+            const requester = peers[requesterId];
+            if (!requester) return null;
+            return (
+              <div key={requesterId} className="stage-queue-item">
+                <span className="queue-name">{requester.displayName}</span>
+                <div className="queue-actions">
+                  <button
+                    type="button"
+                    className="queue-btn primary"
+                    onClick={() => onPassBaton?.(requesterId)}
+                  >
+                    تسليم المنبر
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Host Hand-Raise Queue Banner */}
       {isHost && handRaisers.length > 0 && (
@@ -129,8 +169,46 @@ export function RoomStage({
                 <div className="stage-name-row">
                   <strong className="stage-name">{selfName || "أنت"}</strong>
                   <span className="stage-self-tag">أنت</span>
+                  {selfIsReader && (
+                    <span className="stage-reader-badge" title="أنت القارئ المتصدر حاليًا">
+                      <Feather size={11} strokeWidth={1.5} /> القارئ
+                    </span>
+                  )}
                 </div>
-                <span className="stage-role-tag">{selfRole === "host" ? "المضيف" : "متحدث"}</span>
+                <div className="stage-role-row">
+                  <span className="stage-role-tag">{selfRole === "host" ? "المضيف" : "متحدث"}</span>
+                  {isHost && !selfIsReader && (
+                    <button
+                      type="button"
+                      className="stage-reclaim-btn"
+                      onClick={() => onPassBaton?.(selfId)}
+                      title="استرداد تحكم تقليب الصفحات للمضيف"
+                    >
+                      استرداد المنبر
+                    </button>
+                  )}
+                  {!isHost && selfRole === "speaker" && !selfIsReader && (
+                    selfHasRequestedBaton ? (
+                      <button
+                        type="button"
+                        className="stage-baton-req-btn requested"
+                        onClick={onCancelRequestBaton}
+                        title="إلغاء طلب القراءة"
+                      >
+                        إلغاء الطلب
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="stage-baton-req-btn"
+                        onClick={onRequestBaton}
+                        title="طلب تسلّم المنبر لقراءة الصفحات"
+                      >
+                        <Feather size={11} strokeWidth={1.5} /> طلب المنبر
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
               <HairlineWaveform speaking={selfSpeaking} />
             </div>
@@ -142,6 +220,7 @@ export function RoomStage({
               peer={peer}
               stream={streams[peer.peerId] ?? null}
               isHost={isHost}
+              isReader={peer.peerId === currentReaderId}
               onManage={() => setManagePeerId(peer.peerId)}
             />
           ))}
@@ -219,6 +298,33 @@ export function RoomStage({
               </span>
             </div>
             <div className="manage-body">
+              {/* Pass / Reclaim Baton for Speakers */}
+              {isHost && peers[managePeerId].role !== "listener" && onPassBaton && (
+                managePeerId === currentReaderId ? (
+                  <button
+                    type="button"
+                    className="manage-btn"
+                    onClick={() => {
+                      onPassBaton(selfId);
+                      setManagePeerId(null);
+                    }}
+                  >
+                    <Feather size={15} strokeWidth={1.5} /> استرداد المنبر للمضيف
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="manage-btn"
+                    onClick={() => {
+                      onPassBaton(managePeerId);
+                      setManagePeerId(null);
+                    }}
+                  >
+                    <Feather size={15} strokeWidth={1.5} /> تسليم المنبر (عصا القراءة)
+                  </button>
+                )
+              )}
+
               {peers[managePeerId].role === "listener" ? (
                 <button
                   type="button"
@@ -275,11 +381,13 @@ function SpeakerPeerCard({
   peer,
   stream,
   isHost,
+  isReader,
   onManage,
 }: {
   peer: PeerInfo;
   stream: MediaStream | null;
   isHost: boolean;
+  isReader: boolean;
   onManage: () => void;
 }) {
   const speaking = useSpeaking(stream, !!peer.micOn);
@@ -289,7 +397,14 @@ function SpeakerPeerCard({
     <div className="stage-card">
       <span className="stage-avatar">{initial}</span>
       <div className="stage-card-info">
-        <strong className="stage-name">{peer.displayName}</strong>
+        <div className="stage-name-row">
+          <strong className="stage-name">{peer.displayName}</strong>
+          {isReader && (
+            <span className="stage-reader-badge" title="القارئ المتصدر حاليًا">
+              <Feather size={11} strokeWidth={1.5} /> القارئ
+            </span>
+          )}
+        </div>
         <span className="stage-role-tag">{peer.role === "host" ? "المضيف" : "متحدث"}</span>
       </div>
       <div className="stage-card-trailing">

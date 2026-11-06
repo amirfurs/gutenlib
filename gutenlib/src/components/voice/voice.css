@@ -457,6 +457,24 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
   font-variant-numeric: tabular-nums;
 }
 
+.folio-reader-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--voice-surface);
+  color: var(--voice-accent);
+  border: 1px solid var(--voice-rule-focus);
+  padding: 1px 7px;
+  border-radius: var(--voice-radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.folio-reader-icon {
+  color: var(--voice-accent);
+  flex-shrink: 0;
+}
+
 .folio-live-dot {
   color: var(--voice-accent);
 }
@@ -758,12 +776,14 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
   padding: 1px 6px;
 }
 
-/* Hand Queue */
-.stage-hand-queue {
+/* Hand Queue & Baton Queue */
+.stage-hand-queue,
+.stage-baton-queue {
   background: var(--voice-raised);
   border: 1px solid var(--voice-rule);
   border-radius: var(--voice-radius);
   padding: 12px;
+  margin-bottom: 10px;
 }
 
 .stage-queue-kicker {
@@ -876,6 +896,69 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
 .stage-self-tag {
   color: var(--voice-accent);
   font-size: 10px;
+}
+
+.stage-reader-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--voice-paper);
+  color: var(--voice-accent);
+  border: 1px solid var(--voice-rule-focus);
+  border-radius: var(--voice-radius-pill);
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.stage-role-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.stage-reclaim-btn {
+  background: transparent;
+  color: var(--voice-accent);
+  border: none;
+  font-size: 11px;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color var(--duration-fast) ease;
+}
+
+.stage-reclaim-btn:hover {
+  color: var(--voice-ink);
+}
+
+.stage-baton-req-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--voice-surface);
+  color: var(--voice-ink-secondary);
+  border: 1px solid var(--voice-rule);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+
+.stage-baton-req-btn:hover {
+  background: var(--voice-raised-hover);
+  color: var(--voice-ink);
+  border-color: var(--voice-rule-focus);
+}
+
+.stage-baton-req-btn.requested {
+  background: var(--voice-paper);
+  color: var(--voice-muted);
+  border-color: var(--voice-rule-subtle);
 }
 
 .stage-role-tag {
@@ -1302,6 +1385,45 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
   font-size: 14px;
   font-weight: 600;
   margin: 0;
+}
+
+.marginalia-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.marginalia-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--voice-radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--voice-raised);
+  color: var(--voice-ink-secondary);
+  border: 1px solid var(--voice-rule);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.marginalia-export-btn:hover:not(:disabled) {
+  background: var(--voice-raised-hover);
+  color: var(--voice-ink);
+  border-color: var(--voice-rule-focus);
+}
+
+.marginalia-export-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.marginalia-export-btn.is-success {
+  background: var(--voice-paper);
+  color: var(--voice-accent);
+  border-color: var(--voice-accent);
 }
 
 .marginalia-close-btn {

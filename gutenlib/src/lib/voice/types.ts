@@ -36,6 +36,8 @@ export type JoinedPayload = {
   selfPeerId: string;
   role: VoiceRole;
   hostPeerId: string | null;
+  activeReaderPeerId?: string | null;
+  batonQueue?: string[];
   roomName?: string;
   activeBook?: ActiveBook;
   reading?: ReadingState;

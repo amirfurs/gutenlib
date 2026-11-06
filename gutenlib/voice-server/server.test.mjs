@@ -80,3 +80,40 @@ test("malformed socket payloads do not crash the server", async () => {
   const room = await create(); await join(socket, room, true);
   rejected = once(socket, "control-error"); socket.emit("host-kick", null); assert.equal((await rejected).error, "INVALID_PAYLOAD");
 });
+
+test("active reader baton passing and recitation page sync", async () => {
+  const room = await create();
+  const host = await client();
+  const hostJoined = await join(host, room, true);
+  const guest = await client();
+  const guestJoined = await join(guest, room);
+
+  // Set book so reading navigation is valid
+  const bookUpdated = once(guest, "book-updated");
+  host.emit("host-set-book", {
+    hostSecret: room.hostSecret,
+    book: { source: "gutendex", id: 1342, title: "Pride and Prejudice" },
+  });
+  await bookUpdated;
+
+  // Guest tries to flip page before holding baton -> rejected
+  const rejected = once(guest, "control-error");
+  guest.emit("host-set-chunk", { hostSecret: "none", chunkIndex: 2 });
+  assert.equal((await rejected).error, "NOT_AUTHORIZED");
+
+  // Host passes baton to guest
+  let batonUpdated = once(guest, "baton-updated");
+  host.emit("host-pass-baton", { hostSecret: room.hostSecret, targetPeerId: guestJoined.selfPeerId });
+  const batonPayload = await batonUpdated;
+  assert.equal(batonPayload.activeReaderPeerId, guestJoined.selfPeerId);
+
+  // Now guest holding the baton navigates to chunk 3 -> succeeds!
+  const readingUpdated = once(host, "reading-updated");
+  guest.emit("host-set-chunk", { hostSecret: "none", chunkIndex: 3 });
+  assert.equal((await readingUpdated).reading.index, 3);
+
+  // Host reclaims baton
+  batonUpdated = once(guest, "baton-updated");
+  host.emit("host-pass-baton", { hostSecret: room.hostSecret, targetPeerId: hostJoined.selfPeerId });
+  assert.equal((await batonUpdated).activeReaderPeerId, hostJoined.selfPeerId);
+});

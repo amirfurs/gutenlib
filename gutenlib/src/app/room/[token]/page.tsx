@@ -144,6 +144,13 @@ export default function RoomPage() {
   const canSpeak = room.role !== "listener";
   const participants = Object.values(room.peers);
 
+  const activeReaderId = room.activeReaderId || room.hostId;
+  const isReader = isHost || (Boolean(room.selfId) && room.selfId === activeReaderId);
+  const activeReaderName =
+    activeReaderId === room.selfId
+      ? "أنت"
+      : room.peers[activeReaderId]?.displayName || (activeReaderId === room.hostId ? "المضيف" : undefined);
+
   // Keyboard shortcuts (M to mute/unmute, H to raise hand, C to toggle notes)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -263,6 +270,7 @@ export default function RoomPage() {
             onToggleLayout={() => setLayoutMode((m) => (m === "split" ? "focus" : "split"))}
             onOpenStage={() => setMobileStageOpen(true)}
             onOpenBookPicker={() => setPicker(true)}
+            activeReaderName={activeReaderName}
           />
 
           {room.error && (
@@ -295,8 +303,8 @@ export default function RoomPage() {
                       <RoomArabicReader
                         bookId={room.book.id}
                         page={room.reading.kind === "page" ? room.reading.index : 1}
-                        onPageChange={(page) => room.hostAction("host-set-page", { page })}
-                        isHost={isHost}
+                        onPageChange={(page) => room.setReadingPage(page)}
+                        isHost={isReader}
                         highlightText={room.highlight}
                         bookTitle={room.book.title}
                         bookAuthor={room.book.author}
@@ -306,9 +314,9 @@ export default function RoomPage() {
                         bookId={room.book.id}
                         chunkIndex={room.reading.kind === "chunk" ? room.reading.index : 0}
                         onChunkChange={(chunkIndex) => {
-                          if (isHost) room.hostAction("host-set-chunk", { chunkIndex });
+                          if (isReader) room.setReadingChunk(chunkIndex);
                         }}
-                        isHost={isHost}
+                        isHost={isReader}
                         highlightText={room.highlight}
                         bookTitle={room.book.title}
                         bookAuthor={room.book.author}
@@ -392,9 +400,14 @@ export default function RoomPage() {
                 streams={room.streams}
                 health={room.health}
                 isHost={isHost}
+                activeReaderId={room.activeReaderId}
+                batonQueue={room.batonQueue}
                 onGrantMic={(peerId) => room.hostAction("host-grant-mic", { targetPeerId: peerId })}
                 onRevokeMic={(peerId) => room.hostAction("host-revoke-mic", { targetPeerId: peerId })}
                 onKick={(peerId) => room.hostAction("host-kick", { targetPeerId: peerId })}
+                onPassBaton={(peerId) => room.passBaton(peerId)}
+                onRequestBaton={() => room.requestBaton()}
+                onCancelRequestBaton={() => room.cancelRequestBaton()}
               />
             )}
           </div>
@@ -444,9 +457,14 @@ export default function RoomPage() {
               streams={room.streams}
               health={room.health}
               isHost={isHost}
+              activeReaderId={room.activeReaderId}
+              batonQueue={room.batonQueue}
               onGrantMic={(peerId) => room.hostAction("host-grant-mic", { targetPeerId: peerId })}
               onRevokeMic={(peerId) => room.hostAction("host-revoke-mic", { targetPeerId: peerId })}
               onKick={(peerId) => room.hostAction("host-kick", { targetPeerId: peerId })}
+              onPassBaton={(peerId) => room.passBaton(peerId)}
+              onRequestBaton={() => room.requestBaton()}
+              onCancelRequestBaton={() => room.cancelRequestBaton()}
               isMobileOpen={true}
               onCloseMobile={() => setMobileStageOpen(false)}
             />
@@ -459,6 +477,9 @@ export default function RoomPage() {
             isOpen={marginaliaOpen}
             onClose={() => setMarginaliaOpen(false)}
             onSendMessage={room.sendMessage}
+            roomName={room.roomName}
+            book={room.book}
+            participantCount={participants.length + 1}
           />
 
           {/* Audio Device & Procedural Ambience Modal */}

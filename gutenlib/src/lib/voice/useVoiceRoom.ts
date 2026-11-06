@@ -36,7 +36,7 @@ const errors: Record<string, string> = {
   HOST_ENDED: "أنهى المضيف الجلسة.",
 };
 const messageFor = (code: string) => errors[code] ?? "تعذر تنفيذ الإجراء. حاول مرة أخرى.";
-const initial = { phase: "idle" as SessionPhase, roomName: "", selfId: "", role: "listener" as VoiceRole, hostId: "", hostConnected: true, handRaised: false, peers: {} as Record<string, PeerInfo>, book: null as ActiveBook, reading: { kind: "chunk", index: 0 } as ReadingState, highlight: "", messages: [] as ChatMessage[], error: "" };
+const initial = { phase: "idle" as SessionPhase, roomName: "", selfId: "", role: "listener" as VoiceRole, hostId: "", activeReaderId: "", batonQueue: [] as string[], hostConnected: true, handRaised: false, peers: {} as Record<string, PeerInfo>, book: null as ActiveBook, reading: { kind: "chunk", index: 0 } as ReadingState, highlight: "", messages: [] as ChatMessage[], error: "" };
 
 export function useVoiceRoom(token: string) {
   const [state, setState] = useState(initial);
@@ -117,7 +117,13 @@ export function useVoiceRoom(token: string) {
         error: error => setState(s => ({ ...s, error })),
       });
       for (const peer of payload.peers) engine.current.add(peer.peerId);
-      setState(s => ({ ...s, phase: "connected", error: "", selfId: payload.selfPeerId, role: payload.role, handRaised: !!payload.handRaised, hostId: payload.hostPeerId ?? "", hostConnected: payload.role === "host" || payload.peers.some(p => p.role === "host"), roomName: payload.roomName ?? "غرفة قراءة", peers: Object.fromEntries(payload.peers.map(p => [p.peerId, p])), book: payload.activeBook ?? null, reading: payload.reading ?? initial.reading, highlight: payload.highlight?.text ?? "" }));
+      setState(s => ({ ...s, phase: "connected", error: "", selfId: payload.selfPeerId, role: payload.role, handRaised: !!payload.handRaised, hostId: payload.hostPeerId ?? "", activeReaderId: payload.activeReaderPeerId ?? payload.hostPeerId ?? "", batonQueue: payload.batonQueue ?? [], hostConnected: payload.role === "host" || payload.peers.some(p => p.role === "host"), roomName: payload.roomName ?? "غرفة قراءة", peers: Object.fromEntries(payload.peers.map(p => [p.peerId, p])), book: payload.activeBook ?? null, reading: payload.reading ?? initial.reading, highlight: payload.highlight?.text ?? "" }));
+    });
+    client.on("baton-updated", ({ activeReaderPeerId, batonQueue }: { activeReaderPeerId: string; batonQueue?: string[] }) => {
+      setState(s => ({ ...s, activeReaderId: activeReaderPeerId, batonQueue: batonQueue ?? s.batonQueue }));
+    });
+    client.on("baton-queue-updated", ({ batonQueue }: { batonQueue: string[] }) => {
+      setState(s => ({ ...s, batonQueue }));
     });
     const peerJoined = (peer: PeerInfo) => {
       engine.current?.remove(peer.peerId);
@@ -219,6 +225,31 @@ export function useVoiceRoom(token: string) {
     return sendMessage(`__quote__:${serialized}`);
   };
   return { ...state, streams, health, micOn, micBusy, localStream, join, toggleMic, hostAction, sendMessage, sendQuote,
+    passBaton: (targetPeerId: string) => {
+      if (connected.current && role.current === "host" && auth.current) {
+        socket.current?.emit("host-pass-baton", { targetPeerId, hostSecret: auth.current });
+      }
+    },
+    requestBaton: () => {
+      if (connected.current) {
+        socket.current?.emit("request-baton");
+      }
+    },
+    cancelRequestBaton: () => {
+      if (connected.current) {
+        socket.current?.emit("cancel-request-baton");
+      }
+    },
+    setReadingPage: (page: number) => {
+      if (connected.current) {
+        socket.current?.emit("host-set-page", { page, hostSecret: auth.current || "" });
+      }
+    },
+    setReadingChunk: (chunkIndex: number) => {
+      if (connected.current) {
+        socket.current?.emit("host-set-chunk", { chunkIndex, hostSecret: auth.current || "" });
+      }
+    },
     leave: () => { dispose(); setState(s => ({ ...s, phase: "left", error: "غادرت الجلسة والميكروفون مغلق." })); },
     raiseHand: () => { if (connected.current) socket.current?.emit(state.handRaised ? "cancel-request-mic" : "request-mic"); },
     dismissError: () => setState(s => ({ ...s, error: "" })),

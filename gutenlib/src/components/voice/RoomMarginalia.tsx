@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Quote, Send, X } from "lucide-react";
-import type { ChatMessage } from "@/lib/voice/types";
+import { Check, Download, MessageSquare, Quote, Send, X } from "lucide-react";
+import type { ActiveBook, ChatMessage } from "@/lib/voice/types";
+import { addNote } from "@/lib/library/db";
 
 interface RoomMarginaliaProps {
   messages: ChatMessage[];
@@ -10,6 +11,9 @@ interface RoomMarginaliaProps {
   isOpen: boolean;
   onClose: () => void;
   onSendMessage: (text: string) => Promise<boolean>;
+  roomName?: string;
+  book?: ActiveBook | null;
+  participantCount?: number;
 }
 
 export function RoomMarginalia({
@@ -18,9 +22,13 @@ export function RoomMarginalia({
   isOpen,
   onClose,
   onSendMessage,
+  roomName = "غرفة القراءة",
+  book,
+  participantCount,
 }: RoomMarginaliaProps) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [exported, setExported] = useState(false);
   const listEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,6 +36,89 @@ export function RoomMarginalia({
       listEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [isOpen, messages.length]);
+
+  async function handleExportFolio() {
+    if (messages.length === 0) return;
+
+    const dateStr = new Date().toLocaleDateString("ar-EG", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+
+    const quotes = messages.filter((m) => m.isQuote && m.quoteData);
+    const discussions = messages.filter((m) => !m.isQuote);
+
+    let md = `# كراسة جلسة القراءة: ${roomName}\n\n`;
+    md += `- **التاريخ**: ${dateStr} (${timeStr})\n`;
+    if (book) {
+      md += `- **الكتاب**: ${book.title}${book.author ? ` — ${book.author}` : ""}\n`;
+      md += `- **المصدر**: ${book.source === "abl" ? "المكتبة العربية (ABL)" : "مشروع غوتنبرغ (Gutenberg)"}\n`;
+    }
+    if (participantCount) {
+      md += `- **عدد الحضور**: ${participantCount}\n`;
+    }
+    md += `\n---\n\n`;
+
+    md += `## الاقتباسات المقيدة من الكتاب (${quotes.length})\n\n`;
+    if (quotes.length === 0) {
+      md += `*لم يتم تقييد اقتباسات خلال هذه الجلسة.*\n\n`;
+    } else {
+      for (const q of quotes) {
+        const qTime = new Date(q.ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+        md += `> "${q.quoteData?.text}"\n>\n`;
+        md += `> — **${q.quoteData?.citation || "صفحة غير محددة"}** (قيدها: ${q.name} في ${qTime})\n\n`;
+      }
+    }
+
+    md += `---\n\n`;
+    md += `## حوارات وهوامش الحلقة (${discussions.length})\n\n`;
+    if (discussions.length === 0) {
+      md += `*لا توجد هوامش مسجلة.*\n\n`;
+    } else {
+      for (const d of discussions) {
+        const dTime = new Date(d.ts).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+        md += `- **${d.name}** [${dTime}]: ${d.text}\n`;
+      }
+    }
+
+    md += `\n---\n*تم تصدير هذه الكراسة عبر منصة Gutenlib*\n`;
+
+    // 1. Download Markdown file
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const cleanName = roomName.replace(/[^\w\u0600-\u06FF]+/g, "_");
+    a.download = `folio-${cleanName}-${new Date().toISOString().slice(0, 10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // 2. Persist quotes to personal library notes in IndexedDB if book exists
+    if (book) {
+      try {
+        const scope = book.source === "abl" ? "arabic" : "english";
+        for (const q of quotes) {
+          if (q.quoteData?.text) {
+            // Extract page number if present in citation, else default to 1
+            const pageMatch = q.quoteData.citation?.match(/\d+/);
+            const pageNum = pageMatch ? parseInt(pageMatch[0], 10) : 1;
+            const noteText = `[اقتباس من حلقة ${roomName}]: "${q.quoteData.text}"`;
+            await addNote(scope, String(book.id), pageNum, noteText, q.quoteData.citation);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to save quotes to indexedDB notes:", err);
+      }
+    }
+
+    setExported(true);
+    setTimeout(() => setExported(false), 2500);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,14 +144,26 @@ export function RoomMarginalia({
             <MessageSquare size={15} strokeWidth={1.5} className="marginalia-icon" />
             <h3>الملاحظات والاقتباسات</h3>
           </div>
-          <button
-            type="button"
-            className="marginalia-close-btn"
-            onClick={onClose}
-            aria-label="إغلاق الملاحظات"
-          >
-            <X size={16} strokeWidth={1.5} />
-          </button>
+          <div className="marginalia-header-actions">
+            <button
+              type="button"
+              className={"marginalia-export-btn" + (exported ? " is-success" : "")}
+              onClick={handleExportFolio}
+              title="تصدير كراسة الملاحظات والاقتباسات كملف Markdown وحفظها"
+              disabled={messages.length === 0}
+            >
+              {exported ? <Check size={13} strokeWidth={1.5} /> : <Download size={13} strokeWidth={1.5} />}
+              <span>{exported ? "تم التصدير" : "تصدير الكراسة"}</span>
+            </button>
+            <button
+              type="button"
+              className="marginalia-close-btn"
+              onClick={onClose}
+              aria-label="إغلاق الملاحظات"
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
 
         <div className="marginalia-feed">

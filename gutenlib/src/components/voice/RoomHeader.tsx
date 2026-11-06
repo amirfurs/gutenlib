@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Check, Copy, Maximize2, Minimize2, Radio, Users } from "lucide-react";
+import { BookOpen, Check, Copy, Feather, Maximize2, Minimize2, Radio, Users } from "lucide-react";
 import type { ActiveBook, LayoutMode, ReadingState } from "@/lib/voice/types";
 import { useState } from "react";
 
@@ -16,6 +16,7 @@ interface RoomHeaderProps {
   onToggleLayout: () => void;
   onOpenBookPicker?: () => void;
   onOpenStage?: () => void;
+  activeReaderName?: string;
 }
 
 export function RoomHeader({
@@ -28,6 +29,7 @@ export function RoomHeader({
   onToggleLayout,
   onOpenBookPicker,
   onOpenStage,
+  activeReaderName,
   isHost,
 }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
@@ -86,7 +88,13 @@ export function RoomHeader({
               {book.title}
             </span>
             {book.author && <span className="folio-book-author hidden sm:inline">· {book.author}</span>}
-            {pageLabel && <span className="folio-page-label hidden xs:inline">({pageLabel})</span>}
+            {pageLabel && <span className="folio-page-label">({pageLabel})</span>}
+            {activeReaderName && (
+              <span className="folio-reader-pill hidden sm:inline-flex" title={`القارئ الحالي: ${activeReaderName}`}>
+                <Feather size={11} strokeWidth={1.5} className="folio-reader-icon" />
+                <span>{activeReaderName}</span>
+              </span>
+            )}
             {isHost && onOpenBookPicker && (
               <button
                 type="button"
