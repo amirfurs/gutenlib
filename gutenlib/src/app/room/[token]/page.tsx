@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  BookMarked,
   BookOpen,
   Headphones,
   Highlighter,
@@ -22,7 +23,9 @@ import { RoomHeader } from "@/components/voice/RoomHeader";
 import { RoomCallRail } from "@/components/voice/RoomCallRail";
 import { RoomStage } from "@/components/voice/RoomStage";
 import { RoomMarginalia } from "@/components/voice/RoomMarginalia";
+import { RoomLexiconPopover } from "@/components/voice/RoomLexiconPopover";
 import { AudioDeviceModal } from "@/components/voice/AudioDeviceModal";
+import { addNote } from "@/lib/library/db";
 import { ambientSound } from "@/lib/voice/ambientAudio";
 import { getVoiceServerUrl } from "@/lib/voice/config";
 
@@ -38,6 +41,8 @@ export default function RoomPage() {
   const [previewError, setPreviewError] = useState("");
   const [picker, setPicker] = useState(false);
   const [marginaliaOpen, setMarginaliaOpen] = useState(false);
+  const [lexiconOpen, setLexiconOpen] = useState(false);
+  const [lexiconWord, setLexiconWord] = useState("");
   const [mobileStageOpen, setMobileStageOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -207,6 +212,46 @@ export default function RoomPage() {
     setMarginaliaOpen(true);
   };
 
+  const handleOpenLexicon = (word?: string) => {
+    const clean = (word || selectedText || "").trim();
+    if (clean) {
+      setLexiconWord(clean);
+      setLexiconOpen(true);
+    } else {
+      setLexiconWord("عسجد");
+      setLexiconOpen(true);
+    }
+  };
+
+  const handleSaveLexiconNote = async (
+    word: string,
+    root: string,
+    definition: string,
+    source: string
+  ) => {
+    // 1. Post to live marginalia as quote
+    void room.sendQuote({
+      text: definition,
+      citation: `${room.book?.title ?? "الكتاب"} · المعجم التراثي (${source})`,
+    });
+    // 2. Persist to personal library IndexedDB
+    if (room.book) {
+      try {
+        const scope = room.book.source === "abl" ? "arabic" : "english";
+        const pageNum = room.reading.kind === "page" ? room.reading.index : 1;
+        await addNote(
+          scope,
+          String(room.book.id),
+          pageNum,
+          `[فائدة معجمية]: ${definition}`,
+          `معجم ${source} — جذر [${root}]`
+        );
+      } catch (err) {
+        console.warn("Failed to persist lexicon note to indexedDB:", err);
+      }
+    }
+  };
+
   function enter(e: React.FormEvent) {
     e.preventDefault();
     setPreviewError("");
@@ -331,6 +376,16 @@ export default function RoomPage() {
                         <button
                           type="button"
                           className="selection-btn"
+                          onClick={() => handleOpenLexicon(selectedText)}
+                          title="البحث عن المفردة في لسان العرب ومقاييس اللغة"
+                        >
+                          <BookMarked size={13} strokeWidth={1.5} />
+                          المعجم التراثي
+                        </button>
+
+                        <button
+                          type="button"
+                          className="selection-btn"
                           onClick={handleQuoteSelection}
                           title="إرسال النص المحدد كاقتباس مع رقم الصفحة للملاحظات"
                         >
@@ -422,12 +477,14 @@ export default function RoomPage() {
             handRaised={room.handRaised}
             marginaliaOpen={marginaliaOpen}
             stageOpen={mobileStageOpen}
+            lexiconOpen={lexiconOpen}
             unreadCount={unread}
             audioAudible={audioEnabled}
             onToggleMic={() => void room.toggleMic(preferredAudioDevice)}
             onRaiseHand={room.raiseHand}
             onToggleMarginalia={() => setMarginaliaOpen((v) => !v)}
             onToggleStage={() => setMobileStageOpen((v) => !v)}
+            onOpenLexicon={() => handleOpenLexicon()}
             onToggleAudible={() => {
               if (audioEnabled) setAudioEnabled(false);
               else unlockAudio();
@@ -480,6 +537,15 @@ export default function RoomPage() {
             roomName={room.roomName}
             book={room.book}
             participantCount={participants.length + 1}
+          />
+
+          {/* Instant Classical Lexicon Popover Card */}
+          <RoomLexiconPopover
+            initialWord={lexiconWord}
+            isOpen={lexiconOpen}
+            onClose={() => setLexiconOpen(false)}
+            onSaveToNotes={handleSaveLexiconNote}
+            onShareToRoom={room.sendMessage}
           />
 
           {/* Audio Device & Procedural Ambience Modal */}

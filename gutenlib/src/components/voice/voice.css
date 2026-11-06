@@ -1182,6 +1182,347 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
 }
 
 /* ==========================================================================
+   Instant Classical Lexicon Popover (المعجم التراثي اللحظي)
+   ========================================================================== */
+.lexicon-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--voice-backdrop);
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  animation: fadeIn 150ms ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lexicon-popover-card {
+  width: 100%;
+  max-width: 440px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--voice-surface);
+  border: 1px solid var(--voice-rule-focus);
+  border-radius: var(--voice-radius);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: cardPop 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.lexicon-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--voice-rule);
+  background: var(--voice-raised);
+}
+
+.lexicon-header-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--voice-ink-secondary);
+}
+
+.lexicon-icon {
+  color: var(--voice-accent);
+}
+
+.lexicon-title-text {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.lexicon-close-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  color: var(--voice-muted);
+  border: none;
+  border-radius: 4px;
+  transition: all var(--duration-fast) ease;
+}
+
+.lexicon-close-btn:hover {
+  color: var(--voice-ink);
+  background: var(--voice-surface);
+}
+
+/* Search Form */
+.lexicon-search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--voice-paper);
+  border-bottom: 1px solid var(--voice-rule);
+}
+
+.lexicon-search-icon {
+  color: var(--voice-muted);
+  flex-shrink: 0;
+}
+
+.lexicon-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--voice-ink);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.lexicon-search-input::placeholder {
+  color: var(--voice-muted);
+  font-size: 12px;
+}
+
+.lexicon-search-submit {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: var(--voice-raised);
+  color: var(--voice-ink-secondary);
+  border: 1px solid var(--voice-rule);
+  border-radius: 4px;
+  transition: all var(--duration-fast) ease;
+}
+
+.lexicon-search-submit:hover {
+  color: var(--voice-ink);
+  border-color: var(--voice-rule-focus);
+}
+
+/* Popover Body */
+.lexicon-popover-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lexicon-word-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--voice-rule-subtle);
+}
+
+.lexicon-word-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lexicon-vocalized {
+  font-family: var(--voice-book-font);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--voice-ink);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.lexicon-root-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--voice-accent);
+  background: var(--voice-accent-soft);
+  border: 1px solid var(--voice-accent);
+  border-radius: var(--voice-radius-pill);
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.lexicon-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--voice-muted);
+}
+
+.lexicon-pos {
+  color: var(--voice-ink-secondary);
+}
+
+/* Source Tabs */
+.lexicon-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--voice-rule);
+  padding-bottom: 6px;
+}
+
+.lexicon-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--voice-radius-sm);
+  background: transparent;
+  color: var(--voice-muted);
+  border: 1px solid transparent;
+  font-size: 12px;
+  transition: all var(--duration-fast) ease;
+}
+
+.lexicon-tab .tab-century {
+  font-size: 10px;
+  color: var(--voice-muted);
+}
+
+.lexicon-tab:hover {
+  color: var(--voice-ink);
+  background: var(--voice-raised);
+}
+
+.lexicon-tab.is-active {
+  background: var(--voice-raised);
+  color: var(--voice-ink);
+  border-color: var(--voice-rule-focus);
+}
+
+.lexicon-tab.is-active .tab-century {
+  color: var(--voice-accent);
+}
+
+/* Definition & Citation Card */
+.lexicon-def-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--voice-paper);
+  border: 1px solid var(--voice-rule-subtle);
+  border-radius: var(--voice-radius-sm);
+  padding: 12px;
+}
+
+.lexicon-def-text {
+  font-family: var(--voice-book-font);
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--voice-ink);
+  margin: 0;
+}
+
+.lexicon-citation {
+  border-right: 2px solid var(--voice-accent);
+  padding: 4px 10px 4px 0;
+  margin: 4px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--voice-surface);
+  border-radius: 0 var(--voice-radius-sm) var(--voice-radius-sm) 0;
+}
+
+.lexicon-citation-quote {
+  font-family: var(--voice-book-font);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--voice-ink-secondary);
+  font-style: normal;
+}
+
+.lexicon-citation-author {
+  font-size: 11px;
+  color: var(--voice-accent);
+  font-style: normal;
+}
+
+.lexicon-empty-state {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--voice-muted);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lexicon-fallback-root {
+  font-size: 12px;
+  color: var(--voice-ink-secondary);
+}
+
+/* Popover Footer Actions */
+.lexicon-popover-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--voice-rule);
+  background: var(--voice-raised);
+}
+
+.lexicon-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--voice-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--voice-surface);
+  color: var(--voice-ink);
+  border: 1px solid var(--voice-rule);
+  transition: all var(--duration-fast) ease;
+}
+
+.lexicon-action-btn:hover {
+  background: var(--voice-raised-hover);
+  border-color: var(--voice-rule-focus);
+}
+
+.lexicon-action-btn.primary {
+  background: var(--voice-accent);
+  color: var(--voice-accent-ink);
+  border-color: var(--voice-accent);
+}
+
+.lexicon-action-btn.primary:hover {
+  filter: brightness(1.08);
+}
+
+.lexicon-action-btn.is-done {
+  background: var(--voice-paper);
+  color: var(--voice-accent);
+  border-color: var(--voice-accent);
+}
+
+/* ==========================================================================
    Room Call Rail (Grounded, Quiet Bottom Controls)
    ========================================================================== */
 .call-rail {

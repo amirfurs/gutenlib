@@ -1,6 +1,6 @@
 "use client";
 
-import { Hand, LogOut, MessageSquare, Mic, MicOff, Settings, Users, Volume2, VolumeX } from "lucide-react";
+import { BookMarked, Hand, LogOut, MessageSquare, Mic, MicOff, Settings, Users, Volume2, VolumeX } from "lucide-react";
 
 interface RoomCallRailProps {
   displayName: string;
@@ -11,12 +11,14 @@ interface RoomCallRailProps {
   handRaised: boolean;
   marginaliaOpen: boolean;
   stageOpen?: boolean;
+  lexiconOpen?: boolean;
   unreadCount: number;
   audioAudible: boolean;
   onToggleMic: () => void;
   onRaiseHand: () => void;
   onToggleMarginalia: () => void;
   onToggleStage?: () => void;
+  onOpenLexicon?: () => void;
   onToggleAudible: () => void;
   onOpenSettings: () => void;
   onLeave: () => void;
@@ -32,12 +34,14 @@ export function RoomCallRail({
   handRaised,
   marginaliaOpen,
   stageOpen,
+  lexiconOpen,
   unreadCount,
   audioAudible,
   onToggleMic,
   onRaiseHand,
   onToggleMarginalia,
   onToggleStage,
+  onOpenLexicon,
   onToggleAudible,
   onOpenSettings,
   onLeave,
@@ -114,6 +118,20 @@ export function RoomCallRail({
           {unreadCount > 0 && <span className="call-badge">{unreadCount}</span>}
           <kbd className="keycap hidden-mobile">C</kbd>
         </button>
+
+        {onOpenLexicon && (
+          <button
+            type="button"
+            className={"call-btn" + (lexiconOpen ? " is-open" : "")}
+            onClick={onOpenLexicon}
+            title="المعجم التراثي اللحظي (لسان العرب ومقاييس اللغة)"
+            aria-label="المعجم التراثي"
+            aria-pressed={lexiconOpen}
+          >
+            <BookMarked size={16} strokeWidth={1.5} />
+            <span className="call-btn-text">المعجم</span>
+          </button>
+        )}
 
         <button
           type="button"
