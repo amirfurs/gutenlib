@@ -38,6 +38,7 @@ export default function RoomPage() {
   const [previewError, setPreviewError] = useState("");
   const [picker, setPicker] = useState(false);
   const [marginaliaOpen, setMarginaliaOpen] = useState(false);
+  const [mobileStageOpen, setMobileStageOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -250,6 +251,7 @@ export default function RoomPage() {
             participantCount={participants.length + 1}
             layoutMode={layoutMode}
             onToggleLayout={() => setLayoutMode((m) => (m === "split" ? "focus" : "split"))}
+            onOpenStage={() => setMobileStageOpen(true)}
             onOpenBookPicker={() => setPicker(true)}
           />
 
@@ -396,11 +398,13 @@ export default function RoomPage() {
             micBusy={room.micBusy}
             handRaised={room.handRaised}
             marginaliaOpen={marginaliaOpen}
+            stageOpen={mobileStageOpen}
             unreadCount={unread}
             audioAudible={audioEnabled}
             onToggleMic={() => void room.toggleMic(preferredAudioDevice)}
             onRaiseHand={room.raiseHand}
             onToggleMarginalia={() => setMarginaliaOpen((v) => !v)}
+            onToggleStage={() => setMobileStageOpen((v) => !v)}
             onToggleAudible={() => {
               if (audioEnabled) setAudioEnabled(false);
               else unlockAudio();
@@ -417,6 +421,26 @@ export default function RoomPage() {
                 : undefined
             }
           />
+
+          {/* Mobile Reading Circle Stage Sheet (< 900px) */}
+          {mobileStageOpen && (
+            <RoomStage
+              selfId={room.selfId}
+              selfName={name || "أنت"}
+              selfRole={room.role}
+              selfMicOn={room.micOn}
+              selfStream={room.localStream}
+              peers={room.peers}
+              streams={room.streams}
+              health={room.health}
+              isHost={isHost}
+              onGrantMic={(peerId) => room.hostAction("host-grant-mic", { targetPeerId: peerId })}
+              onRevokeMic={(peerId) => room.hostAction("host-revoke-mic", { targetPeerId: peerId })}
+              onKick={(peerId) => room.hostAction("host-kick", { targetPeerId: peerId })}
+              isMobileOpen={true}
+              onCloseMobile={() => setMobileStageOpen(false)}
+            />
+          )}
 
           {/* Synchronous Marginalia Drawer */}
           <RoomMarginalia

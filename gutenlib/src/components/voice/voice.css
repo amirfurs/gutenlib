@@ -3,6 +3,13 @@
  */
 @import "../../../tokens.css";
 
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
 html:has(.voice-room), body:has(.voice-room),
 html:has(.voice-landing), body:has(.voice-landing) {
   overflow-x: clip;
@@ -384,6 +391,19 @@ html:has(.voice-landing), body:has(.voice-landing) {
   padding: 1px 6px;
 }
 
+.folio-count-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.folio-count-btn:hover {
+  background: var(--voice-raised-hover);
+  border-color: var(--voice-rule-focus);
+}
+
 .folio-book-badge,
 .folio-book-empty {
   display: flex;
@@ -615,8 +635,68 @@ html:has(.voice-landing), body:has(.voice-landing) {
 }
 
 @media (max-width: 900px) {
-  .room-stage {
+  .room-stage:not(.is-mobile-sheet) {
     display: none;
+  }
+
+  .room-stage.is-mobile-sheet {
+    display: flex;
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 80dvh;
+    z-index: 50;
+    border-inline-start: none;
+    border-top: 1px solid var(--voice-rule);
+    border-radius: var(--voice-radius-lg) var(--voice-radius-lg) 0 0;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+    padding-bottom: calc(72px + var(--safe-bottom, 0px));
+    animation: sheetSlideUp 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+.stage-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--voice-backdrop);
+  backdrop-filter: blur(2px);
+  z-index: 49;
+  animation: backdropFadeIn 150ms ease-out;
+}
+
+.stage-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--voice-radius-sm);
+  background: var(--voice-raised);
+  border: 1px solid var(--voice-rule);
+  color: var(--voice-ink-secondary);
+}
+
+.stage-close-btn:hover {
+  color: var(--voice-ink);
+  background: var(--voice-raised-hover);
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -999,13 +1079,13 @@ html:has(.voice-landing), body:has(.voice-landing) {
   position: fixed;
   bottom: 0;
   inset-inline: 0;
-  height: 56px;
+  height: calc(56px + var(--safe-bottom, 0px));
   background: var(--voice-surface);
   border-top: 1px solid var(--voice-rule);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: 0 16px var(--safe-bottom, 0px) 16px;
   gap: 16px;
   z-index: 40;
 }
@@ -1148,7 +1228,7 @@ html:has(.voice-landing), body:has(.voice-landing) {
 .marginalia-drawer {
   position: fixed;
   top: 48px;
-  bottom: 56px;
+  bottom: calc(56px + var(--safe-bottom, 0px));
   inset-inline-end: 0;
   width: min(340px, 100vw);
   background: var(--voice-surface);
@@ -1634,9 +1714,53 @@ html:has(.voice-landing), body:has(.voice-landing) {
   display: none;
 }
 
-/* Utilities */
+/* Utilities & Mobile Ergonomics */
 @media (max-width: 640px) {
   .hidden-mobile {
     display: none !important;
+  }
+
+  /* Prevent iOS Safari 100vw zoom on focus */
+  :is(.voice-landing, .voice-room, .voice-dialog, .audio-modal) :is(input:not([type="range"]), select, textarea) {
+    font-size: 16px !important;
+  }
+
+  /* Mobile Call Rail & Touch Targets */
+  .call-rail {
+    padding: 0 8px var(--safe-bottom, 0px) 8px;
+    gap: 6px;
+  }
+
+  .call-rail__controls {
+    gap: 4px;
+  }
+
+  .call-btn {
+    height: 36px;
+    padding: 0 8px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .call-btn-label {
+    display: none;
+  }
+
+  .call-leave-btn {
+    height: 34px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .room-reader-pane {
+    padding: 10px 12px calc(72px + var(--safe-bottom, 0px)) 12px;
+  }
+
+  .marginalia-drawer {
+    width: 100vw;
+  }
+
+  .marginalia-compose {
+    padding: 10px 12px;
   }
 }

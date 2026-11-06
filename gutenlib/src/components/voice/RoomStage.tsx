@@ -1,6 +1,6 @@
 "use client";
 
-import { Hand, MoreHorizontal, Shield, ShieldOff, UserRoundX, Users } from "lucide-react";
+import { Hand, MoreHorizontal, Shield, ShieldOff, UserRoundX, Users, X } from "lucide-react";
 import type { PeerInfo } from "@/lib/voice/types";
 import { useSpeaking } from "./RoomTools";
 import { useState } from "react";
@@ -18,6 +18,8 @@ interface RoomStageProps {
   onGrantMic: (peerId: string) => void;
   onRevokeMic: (peerId: string) => void;
   onKick: (peerId: string) => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 function HairlineWaveform({ speaking }: { speaking: boolean }) {
@@ -43,6 +45,8 @@ export function RoomStage({
   onGrantMic,
   onRevokeMic,
   onKick,
+  isMobileOpen = false,
+  onCloseMobile,
 }: RoomStageProps) {
   const [managePeerId, setManagePeerId] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -57,14 +61,30 @@ export function RoomStage({
 
   const selfIsSpeaker = selfRole === "host" || selfRole === "speaker";
 
-  return (
-    <aside className="room-stage" aria-label="حلقة القراءة والمشاركون" dir="rtl">
+  const stageContent = (
+    <aside
+      className={"room-stage" + (isMobileOpen ? " is-mobile-sheet" : "")}
+      aria-label="حلقة القراءة والمشاركون"
+      dir="rtl"
+    >
       <div className="stage-section-head">
         <div className="stage-title-wrap">
           <Users size={15} strokeWidth={1.5} className="stage-icon" />
           <h2 className="stage-title">حلقة القراءة</h2>
         </div>
-        <span className="stage-count">{participantList.length + 1}</span>
+        <div className="flex items-center gap-2">
+          <span className="stage-count">{participantList.length + 1}</span>
+          {isMobileOpen && onCloseMobile && (
+            <button
+              type="button"
+              className="stage-close-btn md:hidden"
+              onClick={onCloseMobile}
+              aria-label="إغلاق الحلقة"
+            >
+              <X size={16} strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Host Hand-Raise Queue Banner */}
@@ -238,6 +258,17 @@ export function RoomStage({
       )}
     </aside>
   );
+
+  if (isMobileOpen) {
+    return (
+      <>
+        <div className="stage-backdrop md:hidden" onClick={onCloseMobile} aria-hidden="true" />
+        {stageContent}
+      </>
+    );
+  }
+
+  return stageContent;
 }
 
 function SpeakerPeerCard({

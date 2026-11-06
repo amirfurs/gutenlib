@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Check, Copy, Maximize2, Minimize2, Radio } from "lucide-react";
+import { BookOpen, Check, Copy, Maximize2, Minimize2, Radio, Users } from "lucide-react";
 import type { ActiveBook, LayoutMode, ReadingState } from "@/lib/voice/types";
 import { useState } from "react";
 
@@ -15,6 +15,7 @@ interface RoomHeaderProps {
   layoutMode: LayoutMode;
   onToggleLayout: () => void;
   onOpenBookPicker?: () => void;
+  onOpenStage?: () => void;
 }
 
 export function RoomHeader({
@@ -26,6 +27,7 @@ export function RoomHeader({
   layoutMode,
   onToggleLayout,
   onOpenBookPicker,
+  onOpenStage,
   isHost,
 }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
@@ -43,9 +45,9 @@ export function RoomHeader({
 
   const pageLabel =
     reading.kind === "page"
-      ? `الصفحة ${reading.index}`
+      ? `ص ${reading.index}`
       : reading.kind === "chunk"
-      ? `المقطع ${reading.index + 1}`
+      ? `مقطع ${reading.index + 1}`
       : "";
 
   return (
@@ -58,20 +60,33 @@ export function RoomHeader({
         <span className="folio-room-title" title={roomName}>
           {roomName}
         </span>
-        <span className="folio-count" title={`${participantCount} في الجلسة`}>
-          {participantCount}
-        </span>
+        {onOpenStage ? (
+          <button
+            type="button"
+            className="folio-count-btn"
+            onClick={onOpenStage}
+            title={`${participantCount} في الجلسة · اضغط لفتح الحلقة`}
+            aria-label={`${participantCount} مشارك`}
+          >
+            <Users size={12} strokeWidth={1.5} className="folio-count-icon" />
+            <span>{participantCount}</span>
+          </button>
+        ) : (
+          <span className="folio-count" title={`${participantCount} في الجلسة`}>
+            {participantCount}
+          </span>
+        )}
       </div>
 
       <div className="folio-header__center">
         {book ? (
           <div className="folio-book-badge">
-            <BookOpen size={14} strokeWidth={1.5} className="folio-icon" />
+            <BookOpen size={14} strokeWidth={1.5} className="folio-icon shrink-0" />
             <span className="folio-book-title" title={book.title}>
               {book.title}
             </span>
-            {book.author && <span className="folio-book-author">· {book.author}</span>}
-            {pageLabel && <span className="folio-page-label">({pageLabel})</span>}
+            {book.author && <span className="folio-book-author hidden sm:inline">· {book.author}</span>}
+            {pageLabel && <span className="folio-page-label hidden xs:inline">({pageLabel})</span>}
             {isHost && onOpenBookPicker && (
               <button
                 type="button"
@@ -85,8 +100,9 @@ export function RoomHeader({
           </div>
         ) : (
           <div className="folio-book-empty">
-            <Radio size={13} strokeWidth={1.5} className="folio-live-dot" />
-            <span>جلسة قراءة صوتية</span>
+            <Radio size={13} strokeWidth={1.5} className="folio-live-dot shrink-0" />
+            <span className="hidden xs:inline">جلسة قراءة صوتية</span>
+            <span className="xs:hidden">جلسة صوتية</span>
             {isHost && onOpenBookPicker && (
               <button
                 type="button"
@@ -101,15 +117,16 @@ export function RoomHeader({
       </div>
 
       <div className="folio-header__end">
+        {/* Desktop Layout Focus Toggle (Hidden on mobile where Stage is accessed via Sheet) */}
         <button
           type="button"
-          className="folio-tool-btn"
+          className="folio-tool-btn hidden md:inline-flex"
           onClick={onToggleLayout}
           title={layoutMode === "focus" ? "إظهار الحلقة والملاحظات" : "عرض القراءة المركزة"}
           aria-label={layoutMode === "focus" ? "عرض مقسم" : "عرض مركز"}
         >
           {layoutMode === "focus" ? <Minimize2 size={15} strokeWidth={1.5} /> : <Maximize2 size={15} strokeWidth={1.5} />}
-          <span className="hidden-mobile">{layoutMode === "focus" ? "عرض الحلقة" : "تركيز القراءة"}</span>
+          <span>{layoutMode === "focus" ? "عرض الحلقة" : "تركيز القراءة"}</span>
         </button>
 
         <button
@@ -117,6 +134,7 @@ export function RoomHeader({
           className={"folio-tool-btn" + (copied ? " is-copied" : "")}
           onClick={copyInvite}
           title="نسخ رابط دعوة المشاركين"
+          aria-label={copied ? "تم نسخ الرابط" : "نسخ رابط الدعوة"}
         >
           {copied ? <Check size={15} strokeWidth={1.5} /> : <Copy size={15} strokeWidth={1.5} />}
           <span className="hidden-mobile">{copied ? "تم النسخ" : "نسخ الرابط"}</span>

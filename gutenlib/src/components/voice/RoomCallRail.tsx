@@ -1,6 +1,6 @@
 "use client";
 
-import { Hand, Headphones, LogOut, MessageSquare, Mic, MicOff, Settings, Volume2, VolumeX } from "lucide-react";
+import { Hand, LogOut, MessageSquare, Mic, MicOff, Settings, Users, Volume2, VolumeX } from "lucide-react";
 
 interface RoomCallRailProps {
   displayName: string;
@@ -10,11 +10,13 @@ interface RoomCallRailProps {
   micBusy: boolean;
   handRaised: boolean;
   marginaliaOpen: boolean;
+  stageOpen?: boolean;
   unreadCount: number;
   audioAudible: boolean;
   onToggleMic: () => void;
   onRaiseHand: () => void;
   onToggleMarginalia: () => void;
+  onToggleStage?: () => void;
   onToggleAudible: () => void;
   onOpenSettings: () => void;
   onLeave: () => void;
@@ -29,11 +31,13 @@ export function RoomCallRail({
   micBusy,
   handRaised,
   marginaliaOpen,
+  stageOpen,
   unreadCount,
   audioAudible,
   onToggleMic,
   onRaiseHand,
   onToggleMarginalia,
+  onToggleStage,
   onToggleAudible,
   onOpenSettings,
   onLeave,
@@ -47,7 +51,7 @@ export function RoomCallRail({
         <span className="call-avatar" aria-hidden="true">
           {initial}
         </span>
-        <div className="call-rail__user-text">
+        <div className="call-rail__user-text hidden sm:flex">
           <strong className="call-user-name">{displayName || "أنت"}</strong>
           <span className="call-user-role">
             {isHost ? "مضيف الجلسة" : canSpeak ? "متحدث" : "مستمع"}
@@ -66,7 +70,7 @@ export function RoomCallRail({
             aria-pressed={micOn}
           >
             {micOn ? <Mic size={16} strokeWidth={1.5} /> : <MicOff size={16} strokeWidth={1.5} />}
-            <span>{micBusy ? "جارٍ التجهيز…" : micOn ? "الميكروفون مسموع" : "كتم الصوت"}</span>
+            <span className="call-btn-label">{micBusy ? "جارٍ التجهيز…" : micOn ? "مسموع" : "كتم"}</span>
             <kbd className="keycap hidden-mobile">M</kbd>
           </button>
         ) : (
@@ -78,8 +82,23 @@ export function RoomCallRail({
             aria-pressed={handRaised}
           >
             <Hand size={16} strokeWidth={1.5} />
-            <span>{handRaised ? "بانتظار الإذن" : "طلب التحدث"}</span>
+            <span className="call-btn-label">{handRaised ? "بانتظار الإذن" : "طلب تحدث"}</span>
             <kbd className="keycap hidden-mobile">H</kbd>
+          </button>
+        )}
+
+        {/* Mobile Reading Circle / People Sheet Button */}
+        {onToggleStage && (
+          <button
+            type="button"
+            className={"call-btn" + (stageOpen ? " is-open" : "") + " md:hidden"}
+            onClick={onToggleStage}
+            title="حلقة القراءة والمشاركون"
+            aria-label="المشاركون والحلقة"
+            aria-pressed={stageOpen}
+          >
+            <Users size={16} strokeWidth={1.5} />
+            <span className="hidden xs:inline">الحلقة</span>
           </button>
         )}
 
@@ -91,7 +110,7 @@ export function RoomCallRail({
           aria-pressed={marginaliaOpen}
         >
           <MessageSquare size={16} strokeWidth={1.5} />
-          <span>الملاحظات</span>
+          <span className="hidden xs:inline">الملاحظات</span>
           {unreadCount > 0 && <span className="call-badge">{unreadCount}</span>}
           <kbd className="keycap hidden-mobile">C</kbd>
         </button>
@@ -123,15 +142,16 @@ export function RoomCallRail({
           className="call-leave-btn"
           onClick={onLeave}
           title="مغادرة الجلسة"
+          aria-label="مغادرة الجلسة"
         >
           <LogOut size={15} strokeWidth={1.5} />
-          <span>مغادرة</span>
+          <span className="hidden xs:inline">مغادرة</span>
         </button>
 
         {isHost && onEndRoom && (
           <button
             type="button"
-            className="call-end-btn"
+            className="call-end-btn hidden sm:inline"
             onClick={onEndRoom}
             title="إنهاء الجلسة لجميع الحاضرين"
           >
