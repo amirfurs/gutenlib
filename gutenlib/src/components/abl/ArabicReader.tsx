@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, List, Search, Settings2, CheckCircle2, StickyNote } from "lucide-react";
+import { ChevronLeft, ChevronRight, List, Search, Settings2, CheckCircle2, StickyNote, BookMarked } from "lucide-react";
 import { getEntry, markFinished, upsertEntry } from "@/lib/readingStore";
 import { addNote, deleteNote, getNotesForBookPage } from "@/lib/library/db";
 import { ABLSearchIndex } from "@/lib/abl/searchIndex";
 import { LruPageCache, pageKey, prefetchPage, shouldAllowPrefetch } from "@/lib/abl/pageCache";
 import { DEFAULT_PREFS, loadPrefs, savePrefs, type ReaderPrefs, type ReaderTheme } from "@/lib/abl/readerPrefs";
+import { RoomLexiconPopover } from "@/components/voice/RoomLexiconPopover";
 
 type TocItem = {
   id?: string;
@@ -128,6 +129,37 @@ export function ArabicReader({ id, initialPage }: { id: string; initialPage?: nu
   const searchAbortRef = useRef<AbortController | null>(null);
 
   const contentRef = useRef<HTMLDivElement | null>(null);
+
+  // classical lexicon
+  const [lexiconOpen, setLexiconOpen] = useState(false);
+  const [lexiconWord, setLexiconWord] = useState("عَسْجَد");
+  const [selectedWord, setSelectedWord] = useState("");
+  const [selectionPos, setSelectionPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Track word selection inside reader content for instant classical lexicon popover
+  useEffect(() => {
+    const handleSelection = () => {
+      const sel = window.getSelection();
+      const text = sel?.toString().trim();
+      if (text && text.length >= 1 && text.length <= 60) {
+        const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+        if (range && contentRef.current && contentRef.current.contains(range.commonAncestorContainer)) {
+          const rect = range.getBoundingClientRect();
+          setSelectedWord(text);
+          setSelectionPos({
+            x: Math.max(16, rect.left + rect.width / 2),
+            y: Math.max(16, rect.top - 10),
+          });
+          return;
+        }
+      }
+      setSelectedWord("");
+      setSelectionPos(null);
+    };
+
+    document.addEventListener("selectionchange", handleSelection);
+    return () => document.removeEventListener("selectionchange", handleSelection);
+  }, []);
 
   const cacheRef = useRef<LruPageCache | null>(null);
   const searchIndexRef = useRef<ABLSearchIndex | null>(null);
@@ -842,6 +874,18 @@ export function ArabicReader({ id, initialPage }: { id: string; initialPage?: nu
               <button
                 className={ui.btnBase + " " + ui.btnXs + " " + ui.btn}
                 onClick={() => {
+                  setLexiconWord("عَسْجَد");
+                  setLexiconOpen(true);
+                }}
+                aria-label="المعجم التراثي اللحظي"
+                title="المعجم التراثي اللحظي (لسان العرب ومقاييس اللغة)"
+              >
+                <BookMarked className="h-4 w-4 text-amber-400" />
+              </button>
+
+              <button
+                className={ui.btnBase + " " + ui.btnXs + " " + ui.btn}
+                onClick={() => {
                   setNotesOpen(true);
                   setNoteText("");
                 }}
@@ -1047,6 +1091,43 @@ export function ArabicReader({ id, initialPage }: { id: string; initialPage?: nu
           </div>
         </div>
       ) : null}
+
+      {/* Floating Instant Lexicon Selection Pill */}
+      {selectedWord && selectionPos && (
+        <div
+          className="fixed z-50 transform -translate-x-1/2 -translate-y-full pointer-events-auto"
+          style={{ left: selectionPos.x, top: selectionPos.y }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-950/95 text-amber-200 text-xs font-medium shadow-2xl border border-amber-500/40 backdrop-blur hover:bg-zinc-850 hover:text-amber-100 transition"
+            onClick={() => {
+              setLexiconWord(selectedWord);
+              setLexiconOpen(true);
+              setSelectedWord("");
+              setSelectionPos(null);
+            }}
+          >
+            <BookMarked className="w-3.5 h-3.5 text-amber-400" />
+            <span>المعجم التراثي: &ldquo;{selectedWord.slice(0, 15)}&rdquo;</span>
+          </button>
+        </div>
+      )}
+
+      {/* Instant Classical Lexicon Popover Card */}
+      <RoomLexiconPopover
+        isOpen={lexiconOpen}
+        initialWord={lexiconWord}
+        onClose={() => setLexiconOpen(false)}
+        onSaveToNotes={async (w, r, def, source) => {
+          if (page != null) {
+            await addNote("arabic", `abl:${id}`, page, `[معجم ${source}]: ${def}`);
+            const rows = await getNotesForBookPage(`abl:${id}`, page);
+            setNotes(rows.map((row) => ({ id: row.id, text: row.text, pageNumber: row.pageNumber, updatedAt: row.updatedAt })));
+          }
+        }}
+      />
     </main>
   );
 }

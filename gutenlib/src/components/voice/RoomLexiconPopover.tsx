@@ -49,11 +49,9 @@ export function RoomLexiconPopover({
         const res = await fetch("/api/lexicon?q=" + encodeURIComponent(clean));
         if (res.ok) {
           const remote: LexiconLookupResult = await res.json();
-          if (remote.found && remote.entry) {
-            setResult(remote);
-            if (remote.entry.definitions[0]) {
-              setActiveSource(remote.entry.definitions[0].source);
-            }
+          setResult(remote);
+          if (remote.entry?.definitions[0]) {
+            setActiveSource(remote.entry.definitions[0].source);
           }
         }
       } catch (err) {

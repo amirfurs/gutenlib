@@ -135,7 +135,7 @@ export default function RoomPage() {
   useEffect(() => {
     const handleSelection = () => {
       const text = window.getSelection()?.toString().trim();
-      if (text && text.length > 3 && text.length < 800) {
+      if (text && text.length >= 1 && text.length < 800) {
         setSelectedText(text);
       } else {
         setSelectedText("");
@@ -371,11 +371,17 @@ export default function RoomPage() {
 
                   {/* Contextual Text Selection Action Bar */}
                   {selectedText && (
-                    <div className="reader-selection-bar" role="toolbar" aria-label="أدوات النص المحدد">
+                    <div
+                      className="reader-selection-bar"
+                      role="toolbar"
+                      aria-label="أدوات النص المحدد"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
                       <div className="selection-actions">
                         <button
                           type="button"
                           className="selection-btn"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => handleOpenLexicon(selectedText)}
                           title="البحث عن المفردة في لسان العرب ومقاييس اللغة"
                         >
@@ -386,6 +392,7 @@ export default function RoomPage() {
                         <button
                           type="button"
                           className="selection-btn"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={handleQuoteSelection}
                           title="إرسال النص المحدد كاقتباس مع رقم الصفحة للملاحظات"
                         >
@@ -397,6 +404,7 @@ export default function RoomPage() {
                           <button
                             type="button"
                             className="selection-btn"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
                               room.hostAction("host-set-highlight", {
                                 text: selectedText.slice(0, 1200),

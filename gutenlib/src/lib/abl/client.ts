@@ -14,6 +14,7 @@ export function ablBookClient(opts?: { language?: string }) {
   const transport = createGrpcTransport({
     baseUrl: BASE_URL,
     interceptors: [addLanguageInterceptor(opts?.language ?? "ar")],
+    nodeOptions: { rejectUnauthorized: false },
   });
 
   return createClient(BookService, transport);
@@ -23,6 +24,7 @@ export function ablSearchClient(opts?: { language?: string }) {
   const transport = createGrpcTransport({
     baseUrl: BASE_URL,
     interceptors: [addLanguageInterceptor(opts?.language ?? "ar")],
+    nodeOptions: { rejectUnauthorized: false },
   });
 
   return createClient(SearchService, transport);

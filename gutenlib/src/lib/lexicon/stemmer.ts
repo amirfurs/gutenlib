@@ -25,9 +25,9 @@ const COMMON_SUFFIXES = [
  */
 export function cleanLexiconQuery(raw: string): string {
   if (!raw) return "";
-  // Strip punctuation, quotes, symbols, brackets, and leading/trailing whitespace
+  // Strip punctuation, quotes (including curly/Arabic brackets), symbols, and leading/trailing whitespace
   const stripped = raw
-    .replace(/[«»""''،؛.ـ:؟?!\(\)\[\]\{\}\/\\—–\-]/g, " ")
+    .replace(/[«»“”‘’"\'،؛.ـ:؟?!\(\)\[\]\{\}\/\\—–\-﴾﴿\<\>]/g, " ")
     .trim()
     .split(/\s+/)[0] ?? "";
   return stripped;

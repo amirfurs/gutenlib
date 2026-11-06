@@ -27,9 +27,9 @@ export async function lookupAblLexicon(
   try {
     const searchClient = ablSearchClient({ language: "ar" });
 
-    // 1. Query ABL SearchService with timeout protection (3.5s max)
+    // 1. Query ABL SearchService with fast timeout protection (900ms max)
     const timeoutPromise = new Promise<null>((_, reject) =>
-      setTimeout(() => reject(new Error("ABL_TIMEOUT")), 3500)
+      setTimeout(() => reject(new Error("ABL_TIMEOUT")), 900)
     );
 
     const searchPromise = searchClient.search({
