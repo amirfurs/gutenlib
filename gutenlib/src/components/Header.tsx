@@ -43,6 +43,11 @@ function NavItem({
 export function Header() {
   const pathname = usePathname();
 
+  // Hide the global website header in voice rooms and landing to provide full-bleed immersive workspace
+  if (pathname === "/voice" || pathname.startsWith("/room/") || pathname.startsWith("/r/")) {
+    return null;
+  }
+
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const inArabic = pathname === "/ar" || pathname.startsWith("/ar/");
   const inEnglishBooks =

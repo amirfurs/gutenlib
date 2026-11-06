@@ -51,7 +51,7 @@ export function RoomCallRail({
         <span className="call-avatar" aria-hidden="true">
           {initial}
         </span>
-        <div className="call-rail__user-text hidden sm:flex">
+        <div className="call-rail__user-text">
           <strong className="call-user-name">{displayName || "أنت"}</strong>
           <span className="call-user-role">
             {isHost ? "مضيف الجلسة" : canSpeak ? "متحدث" : "مستمع"}
@@ -91,14 +91,14 @@ export function RoomCallRail({
         {onToggleStage && (
           <button
             type="button"
-            className={"call-btn" + (stageOpen ? " is-open" : "") + " md:hidden"}
+            className={"call-btn mobile-stage-trigger" + (stageOpen ? " is-open" : "")}
             onClick={onToggleStage}
             title="حلقة القراءة والمشاركون"
             aria-label="المشاركون والحلقة"
             aria-pressed={stageOpen}
           >
             <Users size={16} strokeWidth={1.5} />
-            <span className="hidden xs:inline">الحلقة</span>
+            <span className="call-btn-text">الحلقة</span>
           </button>
         )}
 
@@ -110,7 +110,7 @@ export function RoomCallRail({
           aria-pressed={marginaliaOpen}
         >
           <MessageSquare size={16} strokeWidth={1.5} />
-          <span className="hidden xs:inline">الملاحظات</span>
+          <span className="call-btn-text">الملاحظات</span>
           {unreadCount > 0 && <span className="call-badge">{unreadCount}</span>}
           <kbd className="keycap hidden-mobile">C</kbd>
         </button>
@@ -145,7 +145,7 @@ export function RoomCallRail({
           aria-label="مغادرة الجلسة"
         >
           <LogOut size={15} strokeWidth={1.5} />
-          <span className="hidden xs:inline">مغادرة</span>
+          <span className="call-btn-text">مغادرة</span>
         </button>
 
         {isHost && onEndRoom && (

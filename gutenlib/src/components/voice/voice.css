@@ -13,6 +13,26 @@
 html:has(.voice-room), body:has(.voice-room),
 html:has(.voice-landing), body:has(.voice-landing) {
   overflow-x: clip;
+  background: var(--voice-paper);
+}
+
+body:has(.voice-room) .bg-aurora,
+body:has(.voice-landing) .bg-aurora {
+  background: var(--voice-paper) !important;
+  min-height: 100dvh;
+}
+
+body:has(.voice-room) .bg-aurora > .mx-auto,
+body:has(.voice-landing) .bg-aurora > .mx-auto {
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body:has(.voice-room) .bg-aurora > .mx-auto > div,
+body:has(.voice-landing) .bg-aurora > .mx-auto > div {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* ==========================================================================
@@ -478,6 +498,12 @@ html:has(.voice-landing), body:has(.voice-landing) {
 .folio-tool-btn.is-copied {
   color: var(--voice-accent);
   border-color: var(--voice-accent);
+}
+
+@media (max-width: 899px) {
+  .folio-tool-btn.layout-toggle {
+    display: none !important;
+  }
 }
 
 /* Join Screen */
@@ -1715,6 +1741,28 @@ html:has(.voice-landing), body:has(.voice-landing) {
 }
 
 /* Utilities & Mobile Ergonomics */
+@media (min-width: 900px) {
+  .call-btn.mobile-stage-trigger {
+    display: none !important;
+  }
+}
+
+@media (max-width: 899px) {
+  /* On tablets and mobile, collapse username & roles to leave room for controls */
+  .call-rail__user-text {
+    display: none !important;
+  }
+
+  .call-btn-label,
+  .call-btn-text {
+    display: none !important;
+  }
+
+  .call-end-btn {
+    display: none !important;
+  }
+}
+
 @media (max-width: 640px) {
   .hidden-mobile {
     display: none !important;
@@ -1723,6 +1771,51 @@ html:has(.voice-landing), body:has(.voice-landing) {
   /* Prevent iOS Safari 100vw zoom on focus */
   :is(.voice-landing, .voice-room, .voice-dialog, .audio-modal) :is(input:not([type="range"]), select, textarea) {
     font-size: 16px !important;
+  }
+
+  /* Compact Running Folio Header on Mobile */
+  .folio-header {
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .folio-header__start,
+  .folio-header__center,
+  .folio-header__end {
+    gap: 6px;
+  }
+
+  .folio-brand {
+    font-size: 14px;
+  }
+
+  .folio-room-title {
+    max-width: 75px;
+  }
+
+  .folio-book-empty,
+  .folio-book-badge {
+    padding: 2px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .folio-book-title {
+    max-width: 85px;
+  }
+
+  .folio-action-btn {
+    font-size: 11px;
+    padding: 0 2px;
+  }
+
+  .folio-tool-btn {
+    padding: 0 8px;
+    height: 32px;
+  }
+
+  .folio-tool-btn .copy-label {
+    display: none !important;
   }
 
   /* Mobile Call Rail & Touch Targets */
@@ -1740,10 +1833,6 @@ html:has(.voice-landing), body:has(.voice-landing) {
     padding: 0 8px;
     font-size: 12px;
     gap: 4px;
-  }
-
-  .call-btn-label {
-    display: none;
   }
 
   .call-leave-btn {

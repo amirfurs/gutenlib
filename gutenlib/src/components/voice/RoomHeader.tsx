@@ -101,8 +101,7 @@ export function RoomHeader({
         ) : (
           <div className="folio-book-empty">
             <Radio size={13} strokeWidth={1.5} className="folio-live-dot shrink-0" />
-            <span className="hidden xs:inline">جلسة قراءة صوتية</span>
-            <span className="xs:hidden">جلسة صوتية</span>
+            <span className="folio-book-label">جلسة صوتية</span>
             {isHost && onOpenBookPicker && (
               <button
                 type="button"
@@ -120,7 +119,7 @@ export function RoomHeader({
         {/* Desktop Layout Focus Toggle (Hidden on mobile where Stage is accessed via Sheet) */}
         <button
           type="button"
-          className="folio-tool-btn hidden md:inline-flex"
+          className="folio-tool-btn layout-toggle"
           onClick={onToggleLayout}
           title={layoutMode === "focus" ? "إظهار الحلقة والملاحظات" : "عرض القراءة المركزة"}
           aria-label={layoutMode === "focus" ? "عرض مقسم" : "عرض مركز"}
@@ -131,13 +130,13 @@ export function RoomHeader({
 
         <button
           type="button"
-          className={"folio-tool-btn" + (copied ? " is-copied" : "")}
+          className={"folio-tool-btn copy-btn" + (copied ? " is-copied" : "")}
           onClick={copyInvite}
           title="نسخ رابط دعوة المشاركين"
           aria-label={copied ? "تم نسخ الرابط" : "نسخ رابط الدعوة"}
         >
           {copied ? <Check size={15} strokeWidth={1.5} /> : <Copy size={15} strokeWidth={1.5} />}
-          <span className="hidden-mobile">{copied ? "تم النسخ" : "نسخ الرابط"}</span>
+          <span className="copy-label">{copied ? "تم النسخ" : "نسخ الرابط"}</span>
         </button>
       </div>
     </header>
