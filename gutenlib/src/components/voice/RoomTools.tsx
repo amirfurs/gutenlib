@@ -171,25 +171,86 @@ export function RemoteAudio({
   audible,
   version,
   blocked,
+  pan = 0,
+  spatial = false,
 }: {
   stream: MediaStream;
   audible: boolean;
   version: number;
   blocked: () => void;
+  pan?: number;
+  spatial?: boolean;
 }) {
-  const ref = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const pannerRef = useRef<StereoPannerNode | null>(null);
+
+  // Direct Audio Element lifecycle
   useEffect(() => {
-    const audio = ref.current;
+    const audio = audioRef.current;
     if (!audio) return;
     audio.srcObject = stream;
-    audio.muted = !audible;
+    // If spatial panning through Web Audio is active, mute the HTMLAudio element to prevent double playback
+    audio.muted = spatial ? true : !audible;
     if (audible) void audio.play().catch(blocked);
     return () => {
       audio.pause();
       audio.srcObject = null;
     };
-  }, [stream, audible, version, blocked]);
-  return <audio ref={ref} autoPlay playsInline data-voice-audio />;
+  }, [stream, audible, version, blocked, spatial]);
+
+  // Spatial Panning via Web Audio StereoPannerNode
+  useEffect(() => {
+    if (!spatial || typeof window === "undefined") {
+      pannerRef.current = null;
+      if (audioRef.current) audioRef.current.muted = !audible;
+      return;
+    }
+
+    const context = getSharedAudioContext();
+    if (!context || typeof context.createStereoPanner !== "function") {
+      if (audioRef.current) audioRef.current.muted = !audible;
+      return;
+    }
+
+    let sourceNode: MediaStreamAudioSourceNode | null = null;
+    let pannerNode: StereoPannerNode | null = null;
+
+    try {
+      sourceNode = context.createMediaStreamSource(stream);
+      pannerNode = context.createStereoPanner();
+      const clampedPan = Math.max(-0.85, Math.min(0.85, pan));
+      pannerNode.pan.setValueAtTime(clampedPan, context.currentTime);
+
+      sourceNode.connect(pannerNode);
+      pannerNode.connect(context.destination);
+      pannerRef.current = pannerNode;
+
+      if (audioRef.current) audioRef.current.muted = true;
+    } catch {
+      // Fallback to normal direct audio if source binding fails
+      if (audioRef.current) audioRef.current.muted = !audible;
+    }
+
+    return () => {
+      try {
+        sourceNode?.disconnect();
+        pannerNode?.disconnect();
+      } catch {}
+      pannerRef.current = null;
+      if (audioRef.current) audioRef.current.muted = !audible;
+    };
+  }, [stream, spatial, audible, pan]);
+
+  // Dynamic ramp when participant order/pan updates
+  useEffect(() => {
+    if (pannerRef.current && sharedAudioContext) {
+      const now = sharedAudioContext.currentTime;
+      const clampedPan = Math.max(-0.85, Math.min(0.85, pan));
+      pannerRef.current.pan.linearRampToValueAtTime(clampedPan, now + 0.3);
+    }
+  }, [pan]);
+
+  return <audio ref={audioRef} autoPlay playsInline data-voice-audio />;
 }
 
 export function useSpeaking(stream: MediaStream | null, enabled: boolean) {

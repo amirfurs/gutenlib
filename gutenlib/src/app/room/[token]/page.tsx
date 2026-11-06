@@ -47,6 +47,7 @@ export default function RoomPage() {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("split");
   const [selectedText, setSelectedText] = useState("");
   const [preferredAudioDevice, setPreferredAudioDevice] = useState("");
+  const [spatialAudio, setSpatialAudio] = useState(false);
 
   const lastMessage = useRef("");
   const mySpeaking = useSpeaking(room.localStream, room.micOn);
@@ -63,6 +64,7 @@ export default function RoomPage() {
         storage.get("gutenlib.voice." + (hostMode ? "hostName" : "guestName") + "." + token)
     );
     setPreviewRoom(storage.get("gutenlib.voice.roomName." + token));
+    setSpatialAudio(storage.get("gutenlib.voice.spatialAudio") === "1");
     if (!token) return;
     const request = new AbortController();
 
@@ -175,6 +177,14 @@ export default function RoomPage() {
     document.querySelectorAll<HTMLAudioElement>("audio[data-voice-audio]").forEach((audio) => {
       audio.muted = false;
       void audio.play().catch(onBlocked);
+    });
+  };
+
+  const handleToggleSpatialAudio = () => {
+    setSpatialAudio((prev) => {
+      const next = !prev;
+      storage.set("gutenlib.voice.spatialAudio", next ? "1" : "0");
+      return next;
     });
   };
 
@@ -457,19 +467,35 @@ export default function RoomPage() {
             onClose={() => setSettingsOpen(false)}
             localStream={room.localStream}
             onSelectDevice={(id) => setPreferredAudioDevice(id)}
+            spatialAudio={spatialAudio}
+            onToggleSpatialAudio={handleToggleSpatialAudio}
           />
 
-          {/* Hidden Audio Elements for WebRTC Streams */}
+          {/* Audio Sinks for WebRTC Streams with Spatial Circle Panning */}
           <div className="audio-sinks" aria-hidden="true">
-            {Object.entries(room.streams).map(([id, stream]) => (
-              <RemoteAudio
-                key={id}
-                stream={stream}
-                audible={audioEnabled}
-                version={audioVersion}
-                blocked={onBlocked}
-              />
-            ))}
+            {(() => {
+              const entries = Object.entries(room.streams);
+              const total = entries.length;
+              return entries.map(([id, stream], idx) => {
+                let pan = 0;
+                if (total === 2) {
+                  pan = idx === 0 ? -0.4 : 0.4;
+                } else if (total > 2) {
+                  pan = -0.65 + (1.3 * idx) / (total - 1);
+                }
+                return (
+                  <RemoteAudio
+                    key={id}
+                    stream={stream}
+                    audible={audioEnabled}
+                    version={audioVersion}
+                    blocked={onBlocked}
+                    pan={pan}
+                    spatial={spatialAudio}
+                  />
+                );
+              });
+            })()}
           </div>
 
           {/* Book Picker Modal */}

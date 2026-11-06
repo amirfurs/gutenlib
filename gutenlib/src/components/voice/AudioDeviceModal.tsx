@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloudRain, Flame, Headphones, Mic, Sparkles, Volume2, X } from "lucide-react";
+import { CloudRain, Compass, Droplets, Feather, Flame, Headphones, Mic, Volume2, Wind, X } from "lucide-react";
 import { ambientSound, type AmbientPreset } from "@/lib/voice/ambientAudio";
 
 interface AudioDeviceModalProps {
@@ -9,6 +9,8 @@ interface AudioDeviceModalProps {
   onClose: () => void;
   localStream: MediaStream | null;
   onSelectDevice: (deviceId: string) => void;
+  spatialAudio?: boolean;
+  onToggleSpatialAudio?: () => void;
 }
 
 export function AudioDeviceModal({
@@ -16,6 +18,8 @@ export function AudioDeviceModal({
   onClose,
   localStream,
   onSelectDevice,
+  spatialAudio = false,
+  onToggleSpatialAudio,
 }: AudioDeviceModalProps) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState("");
@@ -206,6 +210,42 @@ export function AudioDeviceModal({
                 <Flame size={14} strokeWidth={1.5} />
                 <span>موقد حطب</span>
               </button>
+
+              <button
+                type="button"
+                className={"ambient-preset-btn" + (ambientPreset === "quill" ? " is-active" : "")}
+                onClick={() => {
+                  setAmbientPreset("quill");
+                  ambientSound.play("quill");
+                }}
+              >
+                <Feather size={14} strokeWidth={1.5} />
+                <span>صرير الأقلام</span>
+              </button>
+
+              <button
+                type="button"
+                className={"ambient-preset-btn" + (ambientPreset === "breeze" ? " is-active" : "")}
+                onClick={() => {
+                  setAmbientPreset("breeze");
+                  ambientSound.play("breeze");
+                }}
+              >
+                <Wind size={14} strokeWidth={1.5} />
+                <span>نسيم الليل</span>
+              </button>
+
+              <button
+                type="button"
+                className={"ambient-preset-btn" + (ambientPreset === "fountain" ? " is-active" : "")}
+                onClick={() => {
+                  setAmbientPreset("fountain");
+                  ambientSound.play("fountain");
+                }}
+              >
+                <Droplets size={14} strokeWidth={1.5} />
+                <span>نافورة الأندلس</span>
+              </button>
             </div>
 
             {ambientPreset !== "none" && (
@@ -230,6 +270,34 @@ export function AudioDeviceModal({
               يولد المتصفح هذه الأصوات اصطناعيًا دون تحميل ملفات خارجية، وتنخفض تلقائيًا بنسبة ٧٥٪ أثناء حديث أي قارئ في الجلسة.
             </p>
           </section>
+
+          {/* Binaural Spatial Circle Audio */}
+          {onToggleSpatialAudio && (
+            <section className="audio-section">
+              <span className="audio-label">
+                <Compass size={14} strokeWidth={1.5} /> التوزيع الصوتي المحيطي (Binaural Spatial Circle)
+              </span>
+              <button
+                type="button"
+                className={"spatial-toggle-card" + (spatialAudio ? " is-active" : "")}
+                onClick={onToggleSpatialAudio}
+                aria-pressed={spatialAudio}
+              >
+                <div className="spatial-toggle-meta">
+                  <strong className="spatial-toggle-title">توزيع دائري لأصوات المشاركين</strong>
+                  <span className="spatial-toggle-sub">
+                    {spatialAudio
+                      ? "مُفعّل · يتم توجيه أصوات القراء مجسمًا عبر السماعات حسب موقعهم في الحلقة."
+                      : "مُعطّل · جميع الأصوات مسموعة في المركز بشكل متطابق."}
+                  </span>
+                </div>
+                <span className="spatial-toggle-badge">{spatialAudio ? "مُفعّل" : "مُعطّل"}</span>
+              </button>
+              <p className="audio-hint">
+                يُنصح بارتداء سماعات الرأس للحصول على أفضل تجربة إحاطة صوتية واقعية كأنك تجلس معهم في مجلس واحد.
+              </p>
+            </section>
+          )}
         </div>
       </div>
     </div>

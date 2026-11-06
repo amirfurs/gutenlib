@@ -1580,7 +1580,7 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
 
 .ambient-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
 }
 
@@ -1619,6 +1619,65 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
 
 .ambient-range {
   accent-color: var(--voice-accent);
+}
+
+/* Spatial Circle Audio */
+.spatial-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--voice-raised);
+  border: 1px solid var(--voice-rule);
+  border-radius: var(--voice-radius-sm);
+  text-align: start;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.spatial-toggle-card:hover {
+  background: var(--voice-raised-hover);
+}
+
+.spatial-toggle-card.is-active {
+  border-color: var(--voice-accent);
+  background: var(--voice-accent-soft);
+}
+
+.spatial-toggle-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.spatial-toggle-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--voice-ink);
+}
+
+.spatial-toggle-sub {
+  font-size: 11px;
+  color: var(--voice-muted);
+  line-height: 1.4;
+}
+
+.spatial-toggle-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--voice-muted);
+  background: var(--voice-surface);
+  border: 1px solid var(--voice-rule);
+  border-radius: 4px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.spatial-toggle-card.is-active .spatial-toggle-badge {
+  color: var(--voice-accent);
+  border-color: var(--voice-accent);
+  background: var(--voice-accent-soft);
 }
 
 /* ==========================================================================

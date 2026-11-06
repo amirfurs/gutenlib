@@ -1,6 +1,13 @@
 "use client";
 
-export type AmbientPreset = "none" | "library" | "rain" | "fireplace";
+export type AmbientPreset =
+  | "none"
+  | "library"
+  | "rain"
+  | "fireplace"
+  | "quill"
+  | "breeze"
+  | "fountain";
 
 /**
  * Procedural Web Audio Ambient Soundscape Generator
@@ -87,6 +94,12 @@ class ProceduralAmbientSoundscape {
       this.buildRainSound(ctx, this.masterGain);
     } else if (preset === "fireplace") {
       this.buildFireplaceSound(ctx, this.masterGain);
+    } else if (preset === "quill") {
+      this.buildQuillSound(ctx, this.masterGain);
+    } else if (preset === "breeze") {
+      this.buildBreezeSound(ctx, this.masterGain);
+    } else if (preset === "fountain") {
+      this.buildFountainSound(ctx, this.masterGain);
     }
   }
 
@@ -227,6 +240,169 @@ class ProceduralAmbientSoundscape {
     }, 280);
 
     this.activeNodes.push(crackleInterval);
+  }
+
+  /**
+   * Quill & Parchment: Gentle background warmth with soft acoustic paper turning and pen scratch textures
+   */
+  private buildQuillSound(ctx: AudioContext, destination: GainNode) {
+    const bufferSize = ctx.sampleRate * 2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      output[i] = (lastOut + 0.015 * white) / 1.015;
+      lastOut = output[i];
+      output[i] *= 0.06;
+    }
+
+    const roomSource = ctx.createBufferSource();
+    roomSource.buffer = noiseBuffer;
+    roomSource.loop = true;
+
+    const roomFilter = ctx.createBiquadFilter();
+    roomFilter.type = "lowpass";
+    roomFilter.frequency.value = 350;
+
+    roomSource.connect(roomFilter);
+    roomFilter.connect(destination);
+    roomSource.start();
+    this.activeNodes.push(roomSource, roomFilter);
+
+    // Subtle rhythmic quill strokes
+    const quillInterval = window.setInterval(() => {
+      if (!this.ctx || !this.masterGain || Math.random() > 0.6) return;
+      try {
+        const strokeLength = Math.floor(ctx.sampleRate * (0.05 + Math.random() * 0.09));
+        const strokeBuffer = ctx.createBuffer(1, strokeLength, ctx.sampleRate);
+        const strokeData = strokeBuffer.getChannelData(0);
+        for (let j = 0; j < strokeLength; j++) {
+          const progress = j / strokeLength;
+          const envelope = Math.sin(progress * Math.PI) * (1 - progress * 0.3);
+          strokeData[j] = (Math.random() * 2 - 1) * envelope * 0.04;
+        }
+
+        const strokeSource = ctx.createBufferSource();
+        strokeSource.buffer = strokeBuffer;
+
+        const strokeFilter = ctx.createBiquadFilter();
+        strokeFilter.type = "bandpass";
+        strokeFilter.frequency.value = 2800 + Math.random() * 800;
+        strokeFilter.Q.value = 3.0;
+
+        strokeSource.connect(strokeFilter);
+        strokeFilter.connect(this.masterGain);
+        strokeSource.start();
+      } catch {
+        // ignore
+      }
+    }, 320);
+
+    this.activeNodes.push(quillInterval);
+  }
+
+  /**
+   * Night Breeze: Slow breathing bandpass filter with low-frequency oscillator
+   */
+  private buildBreezeSound(ctx: AudioContext, destination: GainNode) {
+    const bufferSize = ctx.sampleRate * 2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      output[i] = (b0 + b1 + b2) * 0.06;
+    }
+
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 320;
+    filter.Q.value = 2.2;
+
+    // Slow LFO to modulate filter frequency (breathing wind cycle)
+    const lfo = ctx.createOscillator();
+    lfo.type = "sine";
+    lfo.frequency.value = 0.07; // ~14 second breathing period
+
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 140; // modulate between 180Hz and 460Hz
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+
+    noiseSource.connect(filter);
+    filter.connect(destination);
+
+    noiseSource.start();
+    lfo.start();
+
+    this.activeNodes.push(noiseSource, filter, lfo, lfoGain);
+  }
+
+  /**
+   * Andalusian Fountain: Gentle layered trickling water and courtyard air
+   */
+  private buildFountainSound(ctx: AudioContext, destination: GainNode) {
+    const bufferSize = ctx.sampleRate * 2;
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      output[i] = (lastOut + 0.03 * white) / 1.03;
+      lastOut = output[i];
+      output[i] *= 0.09;
+    }
+
+    const waterSource = ctx.createBufferSource();
+    waterSource.buffer = noiseBuffer;
+    waterSource.loop = true;
+
+    const waterFilter = ctx.createBiquadFilter();
+    waterFilter.type = "bandpass";
+    waterFilter.frequency.value = 850;
+    waterFilter.Q.value = 0.9;
+
+    waterSource.connect(waterFilter);
+    waterFilter.connect(destination);
+    waterSource.start();
+    this.activeNodes.push(waterSource, waterFilter);
+
+    // Droplet pings
+    const dropletInterval = window.setInterval(() => {
+      if (!this.ctx || !this.masterGain || Math.random() > 0.5) return;
+      try {
+        const dropOsc = ctx.createOscillator();
+        const dropGain = ctx.createGain();
+        const freq = 1200 + Math.random() * 900;
+        const now = ctx.currentTime;
+
+        dropOsc.type = "sine";
+        dropOsc.frequency.setValueAtTime(freq, now);
+        dropOsc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.06);
+
+        dropGain.gain.setValueAtTime(0.015, now);
+        dropGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+
+        dropOsc.connect(dropGain);
+        dropGain.connect(this.masterGain);
+
+        dropOsc.start(now);
+        dropOsc.stop(now + 0.06);
+      } catch {
+        // ignore
+      }
+    }, 240);
+
+    this.activeNodes.push(dropletInterval);
   }
 }
 
