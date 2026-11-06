@@ -1,4 +1,4 @@
-import { normalizeArabic } from "@/lib/abl/normalizeArabic";
+import { normalizeArabic } from "../abl/normalizeArabic.ts";
 
 /**
  * Common prefixes in Classical Arabic (ordered longest to shortest).
@@ -107,32 +107,35 @@ export function extractCandidateRoots(word: string): {
   // Run on unstripped normalized form first
   applyPatterns(normalized);
 
-  // Strip prefixes
-  let strippedPrefix = normalized;
-  for (const prefix of COMMON_PREFIXES) {
-    if (strippedPrefix.startsWith(prefix) && strippedPrefix.length - prefix.length >= 3) {
-      strippedPrefix = strippedPrefix.slice(prefix.length);
-      candidates.add(strippedPrefix);
-      break;
-    }
-  }
-
-  // Strip suffixes
-  let strippedSuffix = strippedPrefix;
+  // 1. Direct suffix stripping on normalized form
   for (const suffix of COMMON_SUFFIXES) {
-    if (strippedSuffix.endsWith(suffix) && strippedSuffix.length - suffix.length >= 3) {
-      strippedSuffix = strippedSuffix.slice(0, -suffix.length);
-      candidates.add(strippedSuffix);
-      break;
+    if (normalized.endsWith(suffix) && normalized.length - suffix.length >= 3) {
+      const stripped = normalized.slice(0, -suffix.length);
+      candidates.add(stripped);
+      applyPatterns(stripped);
     }
   }
 
-  // Run on stripped form as well
-  applyPatterns(strippedSuffix);
+  // 2. Prefix stripping & dual prefix/suffix stripping
+  for (const prefix of COMMON_PREFIXES) {
+    if (normalized.startsWith(prefix) && normalized.length - prefix.length >= 3) {
+      const p = normalized.slice(prefix.length);
+      candidates.add(p);
+      applyPatterns(p);
+
+      for (const suffix of COMMON_SUFFIXES) {
+        if (p.endsWith(suffix) && p.length - suffix.length >= 3) {
+          const both = p.slice(0, -suffix.length);
+          candidates.add(both);
+          applyPatterns(both);
+        }
+      }
+    }
+  }
 
   return {
     normalized,
-    candidateRoots: Array.from(candidates).filter((c) => c.length >= 3 && c.length <= 4),
+    candidateRoots: Array.from(candidates).filter((c) => c.length >= 3 && c.length <= 5),
   };
 }
 

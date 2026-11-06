@@ -1,6 +1,6 @@
-import type { LexiconEntry, LexiconLookupResult } from "./types";
-import { extractCandidateRoots, formatRootLetters, cleanLexiconQuery } from "./stemmer";
-import { normalizeArabic } from "@/lib/abl/normalizeArabic";
+import type { LexiconEntry, LexiconLookupResult } from "./types.ts";
+import { extractCandidateRoots, formatRootLetters, cleanLexiconQuery } from "./stemmer.ts";
+import { normalizeArabic } from "../abl/normalizeArabic.ts";
 
 /**
  * Curated Classical Arabic Dictionary Corpus.
@@ -288,7 +288,7 @@ export const CLASSICAL_LEXICON: Record<string, LexiconEntry> = {
 
   "سرمد": {
     word: "سَرْمَد",
-    root: "سRedirectsTo_سرمد",
+    root: "سرمد",
     vocalized: "السَّرْمَدُ",
     partOfSpeech: "اسم وصفة",
     wazn: "فَعْلَل",
@@ -509,7 +509,7 @@ export function lookupClassicalWord(rawWord: string): LexiconLookupResult {
     };
   }
 
-  // 2. Direct match on candidate roots
+  // 2. Direct match on candidate roots & dictionary keys
   for (const root of candidateRoots) {
     if (CLASSICAL_LEXICON[root]) {
       const entry = CLASSICAL_LEXICON[root];
@@ -523,9 +523,29 @@ export function lookupClassicalWord(rawWord: string): LexiconLookupResult {
     }
   }
 
-  // 3. Reverse match: search entries whose relatedWords include the normalized term
+  // 2b. Match candidate roots against entry.root field
+  for (const cand of candidateRoots) {
+    for (const entry of Object.values(CLASSICAL_LEXICON)) {
+      if (entry.root === cand || normalizeArabic(entry.word) === cand) {
+        return {
+          found: true,
+          query: clean,
+          root: entry.root,
+          entry,
+          suggestedRoots: candidateRoots.filter((r) => r !== entry.root),
+        };
+      }
+    }
+  }
+
+  // 3. Reverse match: search entries whose relatedWords include the normalized term or any candidate
   for (const [, entry] of Object.entries(CLASSICAL_LEXICON)) {
-    if (entry.relatedWords?.some((w) => normalizeArabic(w) === normalized)) {
+    if (
+      entry.relatedWords?.some((w) => {
+        const nw = normalizeArabic(w);
+        return nw === normalized || candidateRoots.includes(nw);
+      })
+    ) {
       return {
         found: true,
         query: clean,
