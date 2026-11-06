@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { lookupClassicalWord } from "@/lib/lexicon/classicalDictionary";
+import { lookupAblLexicon } from "@/lib/lexicon/ablLexicon";
+import { extractCandidateRoots } from "@/lib/lexicon/stemmer";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -13,8 +15,29 @@ export async function GET(req: Request) {
   }
 
   try {
-    const result = lookupClassicalWord(q);
-    return NextResponse.json(result, {
+    // 1. Fast sub-millisecond local curated dictionary check
+    const localResult = lookupClassicalWord(q);
+    if (localResult.found) {
+      return NextResponse.json(localResult, {
+        headers: {
+          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=43200",
+        },
+      });
+    }
+
+    // 2. Query full ABL heritage corpus (including all dictionaries)
+    const { candidateRoots } = extractCandidateRoots(q);
+    const ablResult = await lookupAblLexicon(q, candidateRoots);
+    if (ablResult && ablResult.found) {
+      return NextResponse.json(ablResult, {
+        headers: {
+          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=43200",
+        },
+      });
+    }
+
+    // 3. Fallback: return estimated root analysis
+    return NextResponse.json(localResult, {
       headers: {
         "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=43200",
       },

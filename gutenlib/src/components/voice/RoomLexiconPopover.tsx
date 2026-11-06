@@ -26,17 +26,49 @@ export function RoomLexiconPopover({
   const [activeSource, setActiveSource] = useState<DictionarySource>("لسان العرب");
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [loadingAbl, setLoadingAbl] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const performLookup = async (term: string) => {
+    const clean = term.trim();
+    if (!clean) return;
+
+    // 1. Instant local lookup
+    const local = lookupClassicalWord(clean);
+    setResult(local);
+    setSaved(false);
+    setShared(false);
+    if (local.entry?.definitions[0]) {
+      setActiveSource(local.entry.definitions[0].source);
+    }
+
+    // 2. If not found in local curated corpus, query live ABL heritage search
+    if (!local.found) {
+      setLoadingAbl(true);
+      try {
+        const res = await fetch("/api/lexicon?q=" + encodeURIComponent(clean));
+        if (res.ok) {
+          const remote: LexiconLookupResult = await res.json();
+          if (remote.found && remote.entry) {
+            setResult(remote);
+            if (remote.entry.definitions[0]) {
+              setActiveSource(remote.entry.definitions[0].source);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Live ABL lexicon lookup note:", err);
+      } finally {
+        setLoadingAbl(false);
+      }
+    }
+  };
 
   // When initialWord changes or popover opens, look up the word
   useEffect(() => {
     if (isOpen && initialWord) {
       setSearchTerm(initialWord);
-      const res = lookupClassicalWord(initialWord);
-      setResult(res);
-      setSaved(false);
-      setShared(false);
-      setActiveSource("لسان العرب");
+      void performLookup(initialWord);
     }
   }, [isOpen, initialWord]);
 
@@ -53,12 +85,7 @@ export function RoomLexiconPopover({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = searchTerm.trim();
-    if (!clean) return;
-    const res = lookupClassicalWord(clean);
-    setResult(res);
-    setSaved(false);
-    setShared(false);
+    void performLookup(searchTerm);
   };
 
   const handleSaveToNotes = () => {
@@ -191,11 +218,20 @@ export function RoomLexiconPopover({
             </>
           ) : (
             <div className="lexicon-empty-state">
-              <p>{result?.message || `لم يتم العثور على "${searchTerm}" في المعجم التراثي المصغر.`}</p>
-              {result?.root && (
-                <span className="lexicon-fallback-root">
-                  الجذر المستنبط المقدر: <strong>{formatRootLetters(result.root)}</strong>
-                </span>
+              {loadingAbl ? (
+                <div className="lexicon-searching-notice">
+                  <span className="lexicon-spinner" aria-hidden="true" />
+                  <p>جارٍ البحث في أمهات المعاجم وخزانة التراث الشاملة (ABL)...</p>
+                </div>
+              ) : (
+                <>
+                  <p>{result?.message || `لم يتم العثور على "${searchTerm}" في المعاجم التراثية المتاحة.`}</p>
+                  {result?.root && (
+                    <span className="lexicon-fallback-root">
+                      الجذر المستنبط المقدر: <strong>{formatRootLetters(result.root)}</strong>
+                    </span>
+                  )}
+                </>
               )}
             </div>
           )}

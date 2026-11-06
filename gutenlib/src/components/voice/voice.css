@@ -1470,6 +1470,31 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
   gap: 8px;
 }
 
+.lexicon-searching-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 8px;
+  color: var(--voice-ink-secondary);
+}
+
+.lexicon-spinner {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--voice-rule-strong);
+  border-top-color: var(--voice-accent);
+  border-radius: 50%;
+  animation: lexicon-spin 0.8s linear infinite;
+}
+
+@keyframes lexicon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .lexicon-fallback-root {
   font-size: 12px;
   color: var(--voice-ink-secondary);

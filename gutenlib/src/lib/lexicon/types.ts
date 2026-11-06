@@ -1,4 +1,4 @@
-export type DictionarySource = "لسان العرب" | "مقاييس اللغة";
+export type DictionarySource = "لسان العرب" | "مقاييس اللغة" | string;
 
 export interface DictionaryDefinition {
   source: DictionarySource;
@@ -7,6 +7,8 @@ export interface DictionaryDefinition {
   definition: string;
   citation?: string;
   citationAuthor?: string;
+  bookId?: string;
+  pageNumber?: number;
 }
 
 export interface LexiconEntry {
