@@ -167,6 +167,13 @@ export function RoomArabicReader({
   // Reading settings & preferences (matching main reader)
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
+
+  useEffect(() => {
+    if (!typeOpen) return;
+    const close = () => setTypeOpen(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [typeOpen]);
   const [prefs, setPrefs] = useState<ReaderPrefs>(DEFAULT_PREFS);
 
   useEffect(() => {
@@ -437,14 +444,17 @@ export function RoomArabicReader({
                   ? "bg-white/20 text-white ring-white/30"
                   : "bg-white/10 text-white ring-white/10 hover:bg-white/15")
               }
-              onClick={() => setTypeOpen((v) => !v)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setTypeOpen((v) => !v);
+              }}
               title="خيارات الخط"
             >
               Aa
             </button>
             {typeOpen && (
               <div
-                className="origin-top-popover absolute left-0 top-[calc(100%+8px)] z-40 w-56 rounded-xl bg-zinc-950 p-3 ring-1 ring-white/15 shadow-2xl"
+                className="origin-top-popover absolute end-0 ltr:right-0 ltr:left-auto rtl:left-0 rtl:right-auto top-[calc(100%+8px)] z-40 w-56 max-w-[calc(100vw-32px)] rounded-xl bg-zinc-950 p-3 ring-1 ring-white/15 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-[11px] font-semibold text-zinc-400 mb-1.5">

@@ -48,6 +48,13 @@ export function Reader({ id }: { id: string }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [typeOpen, setTypeOpen] = useState(false);
 
+  useEffect(() => {
+    if (!typeOpen) return;
+    const close = () => setTypeOpen(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [typeOpen]);
+
   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
@@ -415,13 +422,20 @@ export function Reader({ id }: { id: string }) {
                 "pressable rounded-lg px-3 py-1.5 text-xs font-bold ring-1 transition min-h-[38px] " +
                 (typeOpen ? "bg-white/20 text-white ring-white/30" : "bg-white/10 text-white ring-white/10 hover:bg-white/15")
               }
-              onClick={() => setTypeOpen((v) => !v)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setTypeOpen((v) => !v);
+              }}
               title="Typography options"
             >
               Aa
             </button>
             {typeOpen ? (
-              <div className="origin-top-popover absolute right-0 top-[calc(100%+8px)] z-40 w-56 rounded-xl bg-zinc-950 p-3 ring-1 ring-white/15 shadow-2xl">
+              <div
+                dir="ltr"
+                className="origin-top-popover absolute end-0 ltr:right-0 ltr:left-auto rtl:left-0 rtl:right-auto top-[calc(100%+8px)] z-40 w-56 max-w-[calc(100vw-32px)] rounded-xl bg-zinc-950 p-3 ring-1 ring-white/15 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="text-[11px] font-semibold text-zinc-400 mb-1.5">Font Size: {fontSize}px</div>
                 <div className="flex items-center gap-2 mb-3">
                   <button className="pressable flex-1 rounded bg-white/10 py-1.5 text-xs font-bold text-white hover:bg-white/15" onClick={() => setFontSize((s) => Math.max(14, s - 1))}>
