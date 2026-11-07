@@ -300,16 +300,6 @@ export default function RoomPage() {
               </Link>
             )}
 
-            <div className="room-join-lexicon-row">
-              <button
-                type="button"
-                className="room-join-lexicon-btn"
-                onClick={() => handleOpenLexicon("عسجد")}
-              >
-                <BookMarked size={14} className="text-amber-400" />
-                <span>المعجم التراثي اللحظي (لسان العرب ومقاييس اللغة)</span>
-              </button>
-            </div>
           </form>
         </div>
       ) : (
