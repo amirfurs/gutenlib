@@ -267,24 +267,31 @@ export function RoomLexiconPopover({
 
               {/* Source Tabs (لسان العرب · مقاييس اللغة) */}
               <div className="lexicon-tabs" role="tablist">
-                {entry.definitions.map((d) => (
-                  <button
-                    key={d.source}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeSource === d.source}
-                    className={"lexicon-tab" + (activeSource === d.source ? " is-active" : "")}
-                    onClick={() => setActiveSource(d.source)}
-                  >
-                    <span>{d.source}</span>
-                    <span className="tab-century">{d.author}</span>
-                  </button>
-                ))}
+                {entry.definitions.map((d) => {
+                  const deathYear = d.author.match(/ت\s*\d+هـ?/)?.[0];
+                  return (
+                    <button
+                      key={d.source}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeSource === d.source}
+                      className={"lexicon-tab" + (activeSource === d.source ? " is-active" : "")}
+                      onClick={() => setActiveSource(d.source)}
+                    >
+                      <span className="tab-name">{d.source}</span>
+                      {deathYear && <span className="tab-century">({deathYear})</span>}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Definition Display */}
               {currentDef && (
                 <div className="lexicon-def-card">
+                  <div className="lexicon-source-header">
+                    <span className="lexicon-source-title">{currentDef.source}</span>
+                    <span className="lexicon-source-author">{currentDef.author}</span>
+                  </div>
                   <p className="lexicon-def-text">{currentDef.definition}</p>
 
                   {currentDef.citation && (

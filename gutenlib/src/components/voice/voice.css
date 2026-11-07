@@ -1437,42 +1437,88 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
 /* Source Tabs */
 .lexicon-tabs {
   display: flex;
+  align-items: center;
   gap: 6px;
   border-bottom: 1px solid var(--voice-rule);
-  padding-bottom: 6px;
+  padding-bottom: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.lexicon-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .lexicon-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 5px;
+  padding: 5px 11px;
   border-radius: var(--voice-radius-sm);
-  background: transparent;
+  background: var(--voice-surface);
   color: var(--voice-muted);
-  border: 1px solid transparent;
+  border: 1px solid var(--voice-rule);
   font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
   transition: all var(--duration-fast) ease;
 }
 
+.lexicon-tab .tab-name {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
 .lexicon-tab .tab-century {
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--voice-muted);
+  white-space: nowrap;
+  opacity: 0.85;
 }
 
 .lexicon-tab:hover {
   color: var(--voice-ink);
   background: var(--voice-raised);
+  border-color: var(--voice-rule-focus);
 }
 
 .lexicon-tab.is-active {
   background: var(--voice-raised);
   color: var(--voice-ink);
-  border-color: var(--voice-rule-focus);
+  border-color: var(--voice-warning);
 }
 
 .lexicon-tab.is-active .tab-century {
-  color: var(--voice-accent);
+  color: var(--voice-warning);
+  opacity: 1;
+}
+
+/* Source Header inside def-card */
+.lexicon-source-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--voice-rule-subtle);
+  margin-bottom: 2px;
+}
+
+.lexicon-source-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--voice-warning);
+}
+
+.lexicon-source-author {
+  font-size: 11px;
+  color: var(--voice-muted);
 }
 
 /* Definition & Citation Card */
