@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { execSync } from "node:child_process";
 import type { DictionaryDefinition, DictionarySource, LexiconLookupResult } from "./types.ts";
 import { extractCandidateRoots, formatRootLetters, cleanLexiconQuery } from "./stemmer.ts";
@@ -70,6 +71,8 @@ function getDatabase(): SqliteDatabase | null {
     const candidatePaths = [
       path.join(process.cwd(), "data", "lexicon", "db.sqlite"),
       path.join(process.cwd(), "db.sqlite"),
+      path.join(os.tmpdir(), "gutenlib_lexicon", "db.sqlite"),
+      path.join(os.tmpdir(), "db.sqlite"),
     ];
     if (typeof __dirname !== "undefined") {
       candidatePaths.push(path.resolve(__dirname, "../../../data/lexicon/db.sqlite"));
@@ -88,6 +91,8 @@ function getDatabase(): SqliteDatabase | null {
       const zipCandidates = [
         path.join(process.cwd(), "data", "lexicon", "db.sqlite.zip"),
         path.join(process.cwd(), "db.sqlite.zip"),
+        path.join(os.tmpdir(), "gutenlib_lexicon", "db.sqlite.zip"),
+        path.join(os.tmpdir(), "db.sqlite.zip"),
       ];
       for (const zp of zipCandidates) {
         if (fs.existsSync(zp)) {
@@ -106,14 +111,15 @@ function getDatabase(): SqliteDatabase | null {
       }
     }
 
-    // Auto-fetch database if missing completely
+    // Auto-fetch database if missing completely (downloads to writable temp dir)
     if (!resolvedPath) {
-      const targetDir = path.join(process.cwd(), "data", "lexicon");
+      const targetDir = path.join(os.tmpdir(), "gutenlib_lexicon");
       const targetZip = path.join(targetDir, "db.sqlite.zip");
       const downloadUrl = "https://raw.githubusercontent.com/wizsk/arabic_lexicons/main/assets/data/db/db.sqlite.zip";
+      const curlBin = process.platform === "win32" ? "curl.exe" : "curl";
       try {
         fs.mkdirSync(targetDir, { recursive: true });
-        execSync(`curl.exe -s -L -o "${targetZip}" "${downloadUrl}"`, { stdio: "ignore" });
+        execSync(`${curlBin} -s -L -o "${targetZip}" "${downloadUrl}"`, { stdio: "ignore" });
         if (fs.existsSync(targetZip)) {
           execSync(`tar -xf "${targetZip}"`, { cwd: targetDir, stdio: "ignore" });
           const extracted = path.join(targetDir, "db.sqlite");
