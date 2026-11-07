@@ -3,6 +3,7 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import type { DictionaryDefinition, DictionarySource, LexiconLookupResult } from "./types.ts";
 import { extractCandidateRoots, formatRootLetters, cleanLexiconQuery } from "./stemmer.ts";
+import { normalizeArabic } from "../abl/normalizeArabic.ts";
 
 // Interface for node:sqlite DatabaseSync
 interface SqliteDatabase {
@@ -213,7 +214,16 @@ function getConciseDefinition(cleanText: string, maxLen = 450): string {
 function generateSearchKeys(word: string, candidateRoots: string[]): string[] {
   const keys = new Set<string>();
   const cleaned = cleanLexiconQuery(word);
-  if (cleaned) keys.add(cleaned);
+  if (cleaned) {
+    keys.add(cleaned);
+    const unvocalized = normalizeArabic(cleaned, {
+      stripTashkeel: true,
+      stripTatweel: true,
+      mapAlefVariants: false,
+      mapAlefMaqsuraToYa: false,
+    });
+    if (unvocalized) keys.add(unvocalized);
+  }
 
   for (const r of candidateRoots) {
     if (!r) continue;

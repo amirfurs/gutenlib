@@ -101,13 +101,36 @@ export function extractCandidateRoots(word: string): {
       candidates.add(target[1] + target[3] + target[4]);
     }
 
+    // 3 letters hollow verbs: قال -> قول, قام -> قوم, عان -> عون
+    if (len === 3 && target[1] === "ا") {
+      candidates.add(target[0] + "و" + target[2]);
+      candidates.add(target[0] + "ي" + target[2]);
+    }
+
+    // Normalize medial/final hamza variants (ؤمن -> أمن, يؤمن -> أمن, فؤاد -> فأد)
+    if (target.includes("ؤ") || target.includes("ئ")) {
+      const hamzaFixed = target.replace(/[ؤئ]/g, "أ");
+      candidates.add(hamzaFixed);
+      if (hamzaFixed.length === 3 || hamzaFixed.length === 4) {
+        candidates.add(hamzaFixed);
+      }
+    }
+
+    // 5-6 letters: فعلوك / فعول (حلكوك -> حلك, عصفور -> عصفر)
+    if (len === 6 && target[4] === "و") {
+      candidates.add(target.slice(0, 3));
+    }
+    if (len === 5 && target[3] === "و" && target[2] === target[4]) {
+      candidates.add(target.slice(0, 3));
+    }
+
     // Weak / Assimilated roots: متق / متقين -> وقي
     if (target.startsWith("متق") || target.startsWith("اتق")) {
       candidates.add("وقي");
     }
 
-    // Weak verbs: استعان / نستعين -> عون
-    if (target.includes("تعين") || target.includes("ستعين")) {
+    // Weak verbs: استعان / استعانوا / نستعين -> عون
+    if (target.includes("عان") || target.includes("تعين") || target.includes("ستعين")) {
       candidates.add("عون");
     }
 
@@ -216,7 +239,22 @@ export function extractCandidateRoots(word: string): {
     }
   }
 
-  // 2. Prefix stripping & dual prefix/suffix stripping
+  // 2. Remove common definite article and prefix combinations first
+  const withoutArticles = normalized.replace(/^(ال|كال|بال|فال|وال|لل)/, "");
+  if (withoutArticles !== normalized && withoutArticles.length >= 3) {
+    candidates.add(withoutArticles);
+    applyPatterns(withoutArticles);
+
+    for (const suffix of COMMON_SUFFIXES) {
+      if (withoutArticles.endsWith(suffix) && withoutArticles.length - suffix.length >= 3) {
+        const stripped = withoutArticles.slice(0, -suffix.length);
+        candidates.add(stripped);
+        applyPatterns(stripped);
+      }
+    }
+  }
+
+  // 3. Prefix stripping & dual prefix/suffix stripping
   for (const prefix of COMMON_PREFIXES) {
     if (normalized.startsWith(prefix) && normalized.length - prefix.length >= 3) {
       const p = normalized.slice(prefix.length);
@@ -233,23 +271,11 @@ export function extractCandidateRoots(word: string): {
     }
   }
 
-  // 3. Remove common definite article and prefix combinations
-  const withoutArticles = normalized.replace(/^(ال|كال|بال|فال|وال|لل)/, "");
-  if (withoutArticles !== normalized && withoutArticles.length >= 3) {
-    candidates.add(withoutArticles);
-    applyPatterns(withoutArticles);
-
-    for (const suffix of COMMON_SUFFIXES) {
-      if (withoutArticles.endsWith(suffix) && withoutArticles.length - suffix.length >= 3) {
-        const stripped = withoutArticles.slice(0, -suffix.length);
-        candidates.add(stripped);
-        applyPatterns(stripped);
-      }
-    }
-  }
-
   // Rank candidate roots: 3-letter roots first, then 4-letter roots
-  const roots = Array.from(candidates).filter((c) => c.length === 3 || c.length === 4);
+  // Exclude false roots starting with "ال" (definite article artifact) unless original token is short
+  const roots = Array.from(candidates).filter(
+    (c) => (c.length === 3 || c.length === 4) && (!c.startsWith("ال") || normalized.length <= 3)
+  );
   roots.sort((a, b) => {
     if (a.length === 3 && b.length !== 3) return -1;
     if (b.length === 3 && a.length !== 3) return 1;

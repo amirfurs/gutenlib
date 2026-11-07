@@ -24,8 +24,8 @@ export function normalizeArabic(input: string, opts: NormalizeOptions = {}): str
   let s = input ?? "";
 
   if (o.stripTashkeel) {
-    // Arabic diacritics ranges
-    s = s.replace(/[\u064B-\u065F\u0610-\u061A\u06D6-\u06ED]/g, "");
+    // Arabic diacritics ranges including Quranic dagger alif (\u0670) and small vowels
+    s = s.replace(/[\u064B-\u065F\u0610-\u061A\u0670\u06D6-\u06ED]/g, "");
   }
   if (o.stripTatweel) {
     s = s.replace(/ـ/g, "");
