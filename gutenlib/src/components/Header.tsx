@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookMarked,
   BookOpen,
   Bookmark,
   CheckCircle2,
@@ -110,6 +111,13 @@ export function Header() {
             ) : null}
 
             <NavItem
+              href="/ar/lexicon"
+              label="المعجم التراثي"
+              icon={<BookMarked className="h-4 w-4" />}
+              active={isActive("/ar/lexicon") || isActive("/lexicon")}
+            />
+
+            <NavItem
               href="/voice"
               label="Voice Rooms"
               icon={<Headphones className="h-4 w-4" />}
@@ -140,6 +148,13 @@ export function Header() {
             <NavItem href="/ar/finished" label="تمّت" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/ar/finished")} />
           </>
         ) : null}
+
+        <NavItem
+          href="/ar/lexicon"
+          label="المعجم"
+          icon={<BookMarked className="h-4 w-4" />}
+          active={isActive("/ar/lexicon") || isActive("/lexicon")}
+        />
 
         <NavItem
           href="/voice"

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, BookOpen, Headphones, Link2, LockKeyhole, Mic } from "lucide-react";
+import { ArrowLeft, BookMarked, BookOpen, Headphones, Link2, LockKeyhole, Mic } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getVoiceServerUrl } from "@/lib/voice/config";
 import { storage } from "@/lib/voice/useVoiceRoom";
+import { RoomLexiconPopover } from "@/components/voice/RoomLexiconPopover";
 
 type RoomResponse = { inviteToken: string; hostSecret: string; roomName: string; hostDisplayName: string };
 
@@ -21,6 +22,7 @@ export default function VoicePage() {
   const [room, setRoom] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lexiconOpen, setLexiconOpen] = useState(false);
 
   async function createRoom(event: React.FormEvent) {
     event.preventDefault();
@@ -87,6 +89,15 @@ export default function VoicePage() {
           Guten<span>lib</span>
         </Link>
         <span className="voice-landing__subnav">غرف القراءة</span>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs hover:bg-amber-500/20 transition cursor-pointer"
+          onClick={() => setLexiconOpen(true)}
+          title="فتح المعجم التراثي اللحظي"
+        >
+          <BookMarked size={14} className="text-amber-400" />
+          <span>المعجم التراثي</span>
+        </button>
         <Link href="/" className="quiet-link">
           <ArrowLeft size={16} strokeWidth={1.5} /> المكتبة
         </Link>
@@ -170,11 +181,32 @@ export default function VoicePage() {
           title="دعوة برابط واحد"
           text="شارك الرابط مع رفاق القراءة، ليدخل كل مستمع باسمه فورًا."
         />
+        <article
+          className="voice-feature cursor-pointer hover:border-amber-500/40 transition"
+          onClick={() => setLexiconOpen(true)}
+          role="button"
+          tabIndex={0}
+        >
+          <span className="feature-icon text-amber-400">
+            <BookMarked size={16} strokeWidth={1.5} />
+          </span>
+          <div>
+            <h3>المعجم التراثي اللحظي</h3>
+            <p>استرجاع نصوص لسان العرب ومقاييس اللغة والصحاح والقاموس المحيط مباشرة.</p>
+          </div>
+        </article>
       </section>
 
       <footer className="voice-landing__footer">
         <span>Gutenlib · للقراءة الجماعية المتزامنة</span>
       </footer>
+
+      {/* Instant Classical Lexicon Popover Card */}
+      <RoomLexiconPopover
+        initialWord="عسجد"
+        isOpen={lexiconOpen}
+        onClose={() => setLexiconOpen(false)}
+      />
     </main>
   );
 }

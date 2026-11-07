@@ -299,6 +299,17 @@ export default function RoomPage() {
                 إنشاء جلسة جديدة
               </Link>
             )}
+
+            <div className="room-join-lexicon-row">
+              <button
+                type="button"
+                className="room-join-lexicon-btn"
+                onClick={() => handleOpenLexicon("عسجد")}
+              >
+                <BookMarked size={14} className="text-amber-400" />
+                <span>المعجم التراثي اللحظي (لسان العرب ومقاييس اللغة)</span>
+              </button>
+            </div>
           </form>
         </div>
       ) : (
@@ -547,15 +558,6 @@ export default function RoomPage() {
             participantCount={participants.length + 1}
           />
 
-          {/* Instant Classical Lexicon Popover Card */}
-          <RoomLexiconPopover
-            initialWord={lexiconWord}
-            isOpen={lexiconOpen}
-            onClose={() => setLexiconOpen(false)}
-            onSaveToNotes={handleSaveLexiconNote}
-            onShareToRoom={room.sendMessage}
-          />
-
           {/* Audio Device & Procedural Ambience Modal */}
           <AudioDeviceModal
             isOpen={settingsOpen}
@@ -602,6 +604,15 @@ export default function RoomPage() {
           )}
         </>
       )}
+
+      {/* Instant Classical Lexicon Popover Card (Accessible anywhere in the room & lobby) */}
+      <RoomLexiconPopover
+        initialWord={lexiconWord}
+        isOpen={lexiconOpen}
+        onClose={() => setLexiconOpen(false)}
+        onSaveToNotes={handleSaveLexiconNote}
+        onShareToRoom={room.sendMessage}
+      />
     </main>
   );
 }

@@ -1603,6 +1603,36 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
   gap: 8px;
 }
 
+/* Room Join Lobby Lexicon Trigger */
+.room-join-lexicon-row {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--voice-rule-subtle);
+  display: flex;
+  justify-content: center;
+}
+
+.room-join-lexicon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.room-join-lexicon-btn:hover {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fef3c7;
+}
+
 .lexicon-searching-notice {
   display: flex;
   flex-direction: column;
