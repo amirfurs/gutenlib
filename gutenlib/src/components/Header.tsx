@@ -75,7 +75,9 @@ export function Header() {
       pathname.startsWith("/ar/read/") ||
       pathname.startsWith("/ar/reading") ||
       pathname.startsWith("/ar/finished") ||
-      pathname.startsWith("/ar/library"));
+      pathname.startsWith("/ar/library") ||
+      pathname.startsWith("/ar/lexicon") ||
+      pathname === "/lexicon");
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur">
@@ -107,15 +109,14 @@ export function Header() {
                 <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-4 w-4" />} active={isActive("/ar/library")} />
                 <NavItem href="/ar/reading" label="تتم القراءة" icon={<Bookmark className="h-4 w-4" />} active={isActive("/ar/reading")} />
                 <NavItem href="/ar/finished" label="تمّت القراءة" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/ar/finished")} />
+                <NavItem
+                  href="/ar/lexicon"
+                  label="المعجم التراثي"
+                  icon={<BookMarked className="h-4 w-4" />}
+                  active={isActive("/ar/lexicon") || isActive("/lexicon")}
+                />
               </>
             ) : null}
-
-            <NavItem
-              href="/ar/lexicon"
-              label="المعجم التراثي"
-              icon={<BookMarked className="h-4 w-4" />}
-              active={isActive("/ar/lexicon") || isActive("/lexicon")}
-            />
 
             <NavItem
               href="/voice"
@@ -146,15 +147,14 @@ export function Header() {
             <NavItem href="/ar/library" label="مكتبتي" icon={<Star className="h-4 w-4" />} active={isActive("/ar/library")} />
             <NavItem href="/ar/reading" label="تتم القراءة" icon={<Bookmark className="h-4 w-4" />} active={isActive("/ar/reading")} />
             <NavItem href="/ar/finished" label="تمّت" icon={<CheckCircle2 className="h-4 w-4" />} active={isActive("/ar/finished")} />
+            <NavItem
+              href="/ar/lexicon"
+              label="المعجم"
+              icon={<BookMarked className="h-4 w-4" />}
+              active={isActive("/ar/lexicon") || isActive("/lexicon")}
+            />
           </>
         ) : null}
-
-        <NavItem
-          href="/ar/lexicon"
-          label="المعجم"
-          icon={<BookMarked className="h-4 w-4" />}
-          active={isActive("/ar/lexicon") || isActive("/lexicon")}
-        />
 
         <NavItem
           href="/voice"

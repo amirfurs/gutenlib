@@ -379,16 +379,18 @@ export default function RoomPage() {
                       onMouseDown={(e) => e.preventDefault()}
                     >
                       <div className="selection-actions">
-                        <button
-                          type="button"
-                          className="selection-btn"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleOpenLexicon(selectedText)}
-                          title="البحث عن المفردة في لسان العرب ومقاييس اللغة"
-                        >
-                          <BookMarked size={13} strokeWidth={1.5} />
-                          المعجم التراثي
-                        </button>
+                        {room.book?.source === "abl" && (
+                          <button
+                            type="button"
+                            className="selection-btn"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleOpenLexicon(selectedText)}
+                            title="البحث عن المفردة في لسان العرب ومقاييس اللغة"
+                          >
+                            <BookMarked size={13} strokeWidth={1.5} />
+                            المعجم التراثي
+                          </button>
+                        )}
 
                         <button
                           type="button"
@@ -493,7 +495,7 @@ export default function RoomPage() {
             onRaiseHand={room.raiseHand}
             onToggleMarginalia={() => setMarginaliaOpen((v) => !v)}
             onToggleStage={() => setMobileStageOpen((v) => !v)}
-            onOpenLexicon={() => handleOpenLexicon()}
+            onOpenLexicon={room.book?.source === "abl" ? () => handleOpenLexicon() : undefined}
             onToggleAudible={() => {
               if (audioEnabled) setAudioEnabled(false);
               else unlockAudio();
@@ -595,14 +597,16 @@ export default function RoomPage() {
         </>
       )}
 
-      {/* Instant Classical Lexicon Popover Card (Accessible anywhere in the room & lobby) */}
-      <RoomLexiconPopover
-        initialWord={lexiconWord}
-        isOpen={lexiconOpen}
-        onClose={() => setLexiconOpen(false)}
-        onSaveToNotes={handleSaveLexiconNote}
-        onShareToRoom={room.sendMessage}
-      />
+      {/* Instant Classical Lexicon Popover Card (Accessible only for Arabic books) */}
+      {room.book?.source === "abl" && (
+        <RoomLexiconPopover
+          initialWord={lexiconWord}
+          isOpen={lexiconOpen}
+          onClose={() => setLexiconOpen(false)}
+          onSaveToNotes={handleSaveLexiconNote}
+          onShareToRoom={room.sendMessage}
+        />
+      )}
     </main>
   );
 }

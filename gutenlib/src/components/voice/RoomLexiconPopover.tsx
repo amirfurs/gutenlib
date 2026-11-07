@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import type { DictionarySource, LexiconEntry, LexiconLookupResult } from "@/lib/lexicon/types";
 import { formatRootLetters } from "@/lib/lexicon/stemmer";
-import { lookupClassicalWord } from "@/lib/lexicon/classicalDictionary";
 
 interface RoomLexiconPopoverProps {
   initialWord: string;
@@ -47,39 +46,43 @@ export function RoomLexiconPopover({
     const clean = term.trim();
     if (!clean) return;
 
-    // 1. Instant local offline lookup (optimistic 0ms)
-    const local = lookupClassicalWord(clean);
-    if (local.found) {
-      setResult(local);
-      if (local.entry?.definitions[0]) {
-        setActiveSource(local.entry.definitions[0].source);
-      }
-    } else {
-      setResult(null);
-    }
-
     setSaved(false);
     setShared(false);
     setCopied(false);
     setShowFullText(false);
-
-    // 2. Query full classical lexicon API (real verbatim text from Lisan al-Arab & Maqayis al-Lughah)
     setLoadingAbl(true);
+
     try {
+      // Query authentic classical books only (Lisan al-Arab, Maqayis al-Lughah, Al-Sihah, Al-Qamus al-Muhit, Al-Wasit)
       const res = await fetch("/api/lexicon?q=" + encodeURIComponent(clean));
       if (res.ok) {
-        const remote: LexiconLookupResult = await res.json();
-        if (remote.found) {
-          setResult(remote);
-          if (remote.entry?.definitions[0]) {
-            setActiveSource(remote.entry.definitions[0].source);
+        const data: LexiconLookupResult = await res.json();
+        if (data.found && data.entry && data.entry.definitions.length > 0) {
+          setResult(data);
+          if (data.entry.definitions[0]) {
+            setActiveSource(data.entry.definitions[0].source);
           }
-        } else if (!local.found) {
-          setResult(remote);
+        } else {
+          setResult({
+            found: false,
+            query: clean,
+            message: data.message || "لم يُعثر على مادة لهذا اللفظ في أمهات المعاجم.",
+          });
         }
+      } else {
+        setResult({
+          found: false,
+          query: clean,
+          message: "لم يُعثر على مادة لهذا اللفظ في أمهات المعاجم.",
+        });
       }
     } catch (err) {
-      console.warn("Live classical lexicon lookup note:", err);
+      console.warn("Classical lexicon lookup error:", err);
+      setResult({
+        found: false,
+        query: clean,
+        message: "تعذر استرجاع المادة من المعاجم التراثية.",
+      });
     } finally {
       setLoadingAbl(false);
     }
@@ -359,14 +362,7 @@ export function RoomLexiconPopover({
                   <p>جارٍ البحث في أمهات المعاجم وخزانة التراث الشاملة (ABL)...</p>
                 </div>
               ) : (
-                <>
-                  <p>{result?.message || `لم يتم العثور على "${searchTerm}" في المعاجم التراثية المتاحة.`}</p>
-                  {result?.root && (
-                    <span className="lexicon-fallback-root">
-                      الجذر المستنبط المقدر: <strong>{formatRootLetters(result.root)}</strong>
-                    </span>
-                  )}
-                </>
+                <p>{result?.message || `لم يتم العثور على "${searchTerm}" في المعاجم التراثية المتاحة.`}</p>
               )}
             </div>
           )}
