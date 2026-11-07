@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookMarked, Check, CornerDownLeft, Quote, Search, Send, X } from "lucide-react";
+import { BookMarked, Check, Copy, CornerDownLeft, Quote, Search, Send, X } from "lucide-react";
 import type { DictionarySource, LexiconEntry, LexiconLookupResult } from "@/lib/lexicon/types";
 import { formatRootLetters } from "@/lib/lexicon/stemmer";
 import { lookupClassicalWord } from "@/lib/lexicon/classicalDictionary";
@@ -26,6 +26,7 @@ export function RoomLexiconPopover({
   const [activeSource, setActiveSource] = useState<DictionarySource>("لسان العرب");
   const [saved, setSaved] = useState(false);
   const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [loadingAbl, setLoadingAbl] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,11 +39,12 @@ export function RoomLexiconPopover({
     setResult(local);
     setSaved(false);
     setShared(false);
+    setCopied(false);
     if (local.entry?.definitions[0]) {
       setActiveSource(local.entry.definitions[0].source);
     }
 
-    // 2. If not found in local curated corpus, query live ABL heritage search
+    // 2. Query full classical lexicon API (Wiktionary / ABL / Semantic synthesis)
     if (!local.found) {
       setLoadingAbl(true);
       try {
@@ -62,11 +64,14 @@ export function RoomLexiconPopover({
     }
   };
 
-  // When initialWord changes or popover opens, look up the word
+  // When initialWord changes or popover opens, look up the word & autofocus
   useEffect(() => {
-    if (isOpen && initialWord) {
-      setSearchTerm(initialWord);
-      void performLookup(initialWord);
+    if (isOpen) {
+      if (initialWord) {
+        setSearchTerm(initialWord);
+        void performLookup(initialWord);
+      }
+      setTimeout(() => inputRef.current?.focus(), 80);
     }
   }, [isOpen, initialWord]);
 
@@ -84,6 +89,25 @@ export function RoomLexiconPopover({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     void performLookup(searchTerm);
+  };
+
+  const handleCopyDefinition = async () => {
+    if (!result?.entry) return;
+    const entry = result.entry;
+    const def = entry.definitions.find((d) => d.source === activeSource) || entry.definitions[0];
+    if (!def) return;
+
+    const formatted = `[معجم ${def.source}]: ${entry.vocalized} (جذر: ${formatRootLetters(entry.root)}) — ${def.definition}${
+      def.citation ? ` | شاهد: "${def.citation}"` : ""
+    }`;
+
+    try {
+      await navigator.clipboard.writeText(formatted);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
   };
 
   const handleSaveToNotes = () => {
@@ -179,6 +203,45 @@ export function RoomLexiconPopover({
                   <span className="lexicon-pos">{entry.partOfSpeech}</span>
                   {entry.wazn && <span className="lexicon-wazn">وزن: {entry.wazn}</span>}
                 </div>
+
+                {result?.suggestedRoots && result.suggestedRoots.length > 0 && (
+                  <div className="lexicon-suggested-roots">
+                    <span>أصول بديلة:</span>
+                    {result.suggestedRoots.slice(0, 3).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        className="lexicon-root-chip"
+                        onClick={() => {
+                          setSearchTerm(r);
+                          void performLookup(r);
+                        }}
+                        title={`استعلام جذر: ${formatRootLetters(r)}`}
+                      >
+                        {formatRootLetters(r)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {entry.relatedWords && entry.relatedWords.length > 0 && (
+                  <div className="lexicon-related-row">
+                    <span>مشتقات:</span>
+                    {entry.relatedWords.slice(0, 4).map((rw) => (
+                      <button
+                        key={rw}
+                        type="button"
+                        className="lexicon-word-chip"
+                        onClick={() => {
+                          setSearchTerm(rw);
+                          void performLookup(rw);
+                        }}
+                      >
+                        {rw}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Source Tabs (لسان العرب · مقاييس اللغة) */}
@@ -238,6 +301,16 @@ export function RoomLexiconPopover({
         {/* Popover Actions Footer */}
         {entry && (
           <div className="lexicon-popover-footer">
+            <button
+              type="button"
+              className={"lexicon-action-btn" + (copied ? " is-done" : "")}
+              onClick={handleCopyDefinition}
+              title="نسخ التعريف والشاهد إلى الحافظة"
+            >
+              {copied ? <Check size={13} strokeWidth={1.5} /> : <Copy size={13} strokeWidth={1.5} />}
+              <span>{copied ? "تم النسخ" : "نسخ الفائدة"}</span>
+            </button>
+
             <button
               type="button"
               className={"lexicon-action-btn" + (saved ? " is-done" : "")}

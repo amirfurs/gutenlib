@@ -1366,9 +1366,66 @@ body:has(.voice-landing) .bg-aurora > .mx-auto > div {
 .lexicon-meta-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   font-size: 11px;
   color: var(--voice-muted);
+}
+
+.lexicon-suggested-roots {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--voice-muted);
+}
+
+.lexicon-root-chip {
+  background: var(--voice-surface-overlay);
+  border: 1px solid var(--voice-rule);
+  color: var(--voice-ink-secondary);
+  border-radius: var(--voice-radius-pill);
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lexicon-root-chip:hover {
+  background: var(--voice-accent-soft);
+  border-color: var(--voice-accent);
+  color: var(--voice-accent);
+}
+
+.lexicon-related-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--voice-rule);
+  font-size: 11px;
+  color: var(--voice-muted);
+}
+
+.lexicon-word-chip {
+  background: transparent;
+  border: 1px solid var(--voice-rule);
+  color: var(--voice-ink);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lexicon-word-chip:hover {
+  border-color: var(--voice-accent);
+  color: var(--voice-accent);
 }
 
 .lexicon-pos {
