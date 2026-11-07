@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { lookupRealBookLexicon } from "@/lib/lexicon/realBookLexicon";
 import { lookupClassicalWord } from "@/lib/lexicon/classicalDictionary";
 import { lookupOnlineLexicon } from "@/lib/lexicon/onlineLexicon";
 import { lookupAblLexicon } from "@/lib/lexicon/ablLexicon";
 import { extractCandidateRoots } from "@/lib/lexicon/stemmer";
 import { synthesizeClassicalEntry } from "@/lib/lexicon/semanticRoots";
+
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -17,7 +20,18 @@ export async function GET(req: Request) {
   }
 
   try {
-    // 1. Fast sub-millisecond local curated dictionary check (0ms)
+    // 1. Direct retrieval of real verbatim text from classical books
+    // (لسان العرب لابن منظور، معجم مقاييس اللغة لابن فارس، الصحاح للجوهري، القاموس المحيط للفيروزآبادي)
+    const realBookResult = lookupRealBookLexicon(q);
+    if (realBookResult.found) {
+      return NextResponse.json(realBookResult, {
+        headers: {
+          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=43200",
+        },
+      });
+    }
+
+    // 2. Curated classical word definitions
     const localResult = lookupClassicalWord(q);
     if (localResult.found) {
       return NextResponse.json(localResult, {
@@ -30,7 +44,7 @@ export async function GET(req: Request) {
     const { candidateRoots } = extractCandidateRoots(q);
     const primaryRoot = candidateRoots[0] || localResult.root || q.slice(0, 3);
 
-    // 2. Query open classical Arabic lexicon corpus (Wiktionary API with IPv4 priority)
+    // 3. Query open classical Arabic lexicon corpus (Wiktionary API with IPv4 priority)
     const onlineResult = await lookupOnlineLexicon(q, candidateRoots);
     if (onlineResult && onlineResult.found) {
       return NextResponse.json(onlineResult, {
@@ -40,7 +54,7 @@ export async function GET(req: Request) {
       });
     }
 
-    // 3. Query ABL heritage corpus (fast 900ms timeout)
+    // 4. Query ABL heritage corpus (fast 900ms timeout)
     const ablResult = await lookupAblLexicon(q, candidateRoots);
     if (ablResult && ablResult.found) {
       return NextResponse.json(ablResult, {
@@ -50,7 +64,7 @@ export async function GET(req: Request) {
       });
     }
 
-    // 4. Autonomous Heritage Semantic Synthesis (never fails, guarantees 100% meaningful coverage)
+    // 5. Autonomous Heritage Semantic Synthesis (guarantees coverage)
     const synthesized = synthesizeClassicalEntry(q, primaryRoot, candidateRoots);
     return NextResponse.json(synthesized, {
       headers: {

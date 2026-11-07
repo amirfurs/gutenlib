@@ -1,7 +1,14 @@
+import dns from "node:dns";
 import { createClient, type Interceptor } from "@connectrpc/connect";
 import { createGrpcTransport } from "@connectrpc/connect-node";
 import { BookService } from "./proto/ablibrary/services/book_service/book_service_pb.ts";
 import { SearchService } from "./proto/ablibrary/services/search_service/search_service_pb.ts";
+
+try {
+  dns.setDefaultResultOrder?.("ipv4first");
+} catch {
+  // best-effort
+}
 
 const BASE_URL = "https://grpc.ablibrary.net";
 

@@ -50,3 +50,6 @@ next-env.d.ts
 /.data/
 .data/
 .vercel_*
+*.sqlite
+data/lexicon/*.sqlite
+data/lexicon/*.zip

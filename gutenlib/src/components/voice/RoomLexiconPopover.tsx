@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookMarked, Check, Copy, CornerDownLeft, Quote, Search, Send, X } from "lucide-react";
+import {
+  BookMarked,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  CornerDownLeft,
+  ExternalLink,
+  Quote,
+  Search,
+  Send,
+  X,
+} from "lucide-react";
 import type { DictionarySource, LexiconEntry, LexiconLookupResult } from "@/lib/lexicon/types";
 import { formatRootLetters } from "@/lib/lexicon/stemmer";
 import { lookupClassicalWord } from "@/lib/lexicon/classicalDictionary";
@@ -28,39 +40,48 @@ export function RoomLexiconPopover({
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loadingAbl, setLoadingAbl] = useState(false);
+  const [showFullText, setShowFullText] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const performLookup = async (term: string) => {
     const clean = term.trim();
     if (!clean) return;
 
-    // 1. Instant local lookup
+    // 1. Instant local offline lookup (optimistic 0ms)
     const local = lookupClassicalWord(clean);
-    setResult(local);
+    if (local.found) {
+      setResult(local);
+      if (local.entry?.definitions[0]) {
+        setActiveSource(local.entry.definitions[0].source);
+      }
+    } else {
+      setResult(null);
+    }
+
     setSaved(false);
     setShared(false);
     setCopied(false);
-    if (local.entry?.definitions[0]) {
-      setActiveSource(local.entry.definitions[0].source);
-    }
+    setShowFullText(false);
 
-    // 2. Query full classical lexicon API (Wiktionary / ABL / Semantic synthesis)
-    if (!local.found) {
-      setLoadingAbl(true);
-      try {
-        const res = await fetch("/api/lexicon?q=" + encodeURIComponent(clean));
-        if (res.ok) {
-          const remote: LexiconLookupResult = await res.json();
+    // 2. Query full classical lexicon API (real verbatim text from Lisan al-Arab & Maqayis al-Lughah)
+    setLoadingAbl(true);
+    try {
+      const res = await fetch("/api/lexicon?q=" + encodeURIComponent(clean));
+      if (res.ok) {
+        const remote: LexiconLookupResult = await res.json();
+        if (remote.found) {
           setResult(remote);
           if (remote.entry?.definitions[0]) {
             setActiveSource(remote.entry.definitions[0].source);
           }
+        } else if (!local.found) {
+          setResult(remote);
         }
-      } catch (err) {
-        console.warn("Live ABL lexicon lookup note:", err);
-      } finally {
-        setLoadingAbl(false);
       }
+    } catch (err) {
+      console.warn("Live classical lexicon lookup note:", err);
+    } finally {
+      setLoadingAbl(false);
     }
   };
 
@@ -273,6 +294,52 @@ export function RoomLexiconPopover({
                         <cite className="lexicon-citation-author">— {currentDef.citationAuthor}</cite>
                       )}
                     </blockquote>
+                  )}
+
+                  {/* Expandable Full Classical Text */}
+                  {currentDef.fullText && currentDef.fullText.length > currentDef.definition.length && (
+                    <div className="lexicon-fulltext-section">
+                      <button
+                        type="button"
+                        className="lexicon-toggle-fulltext-btn"
+                        onClick={() => setShowFullText(!showFullText)}
+                        aria-expanded={showFullText}
+                      >
+                        {showFullText ? (
+                          <>
+                            <ChevronUp size={13} strokeWidth={1.5} />
+                            <span>طي النص التراثي الكامل</span>
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown size={13} strokeWidth={1.5} />
+                            <span>قراءة النص التراثي الكامل من الكتاب ({currentDef.source})</span>
+                          </>
+                        )}
+                      </button>
+
+                      {showFullText && (
+                        <div className="lexicon-fulltext-content" dir="rtl">
+                          <p className="lexicon-fulltext-body">{currentDef.fullText}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Direct link to ABL Volume in Reader */}
+                  {currentDef.bookId && (
+                    <div className="lexicon-book-link-row">
+                      <a
+                        href={`/ar/read/${currentDef.bookId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="lexicon-reader-link"
+                        title={`تصفح مجلد ${currentDef.source} في قارئ الكتب`}
+                      >
+                        <ExternalLink size={12} strokeWidth={1.5} />
+                        <span>فتح المجلد الكامل في قارئ التراث</span>
+                      </a>
+                    </div>
                   )}
                 </div>
               )}

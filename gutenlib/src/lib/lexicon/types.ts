@@ -1,4 +1,10 @@
-export type DictionarySource = "لسان العرب" | "مقاييس اللغة" | string;
+export type DictionarySource =
+  | "لسان العرب"
+  | "مقاييس اللغة"
+  | "الصحاح في اللغة"
+  | "القاموس المحيط"
+  | "المعجم الوسيط"
+  | string;
 
 export interface DictionaryDefinition {
   source: DictionarySource;
@@ -9,6 +15,7 @@ export interface DictionaryDefinition {
   citationAuthor?: string;
   bookId?: string;
   pageNumber?: number;
+  fullText?: string;
 }
 
 export interface LexiconEntry {
