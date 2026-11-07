@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import zlib from "node:zlib";
+import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import type { DictionaryDefinition, DictionarySource, LexiconLookupResult } from "./types.ts";
 import { extractCandidateRoots, formatRootLetters, cleanLexiconQuery } from "./stemmer.ts";
@@ -69,20 +71,83 @@ function getDatabase(): SqliteDatabase | null {
 
   try {
     const candidatePaths = [
+      path.join(os.tmpdir(), "classical_books.sqlite"),
       path.join(process.cwd(), "data", "lexicon", "db.sqlite"),
+      path.join(process.cwd(), "gutenlib", "data", "lexicon", "db.sqlite"),
       path.join(process.cwd(), "db.sqlite"),
       path.join(os.tmpdir(), "gutenlib_lexicon", "db.sqlite"),
       path.join(os.tmpdir(), "db.sqlite"),
     ];
     if (typeof __dirname !== "undefined") {
       candidatePaths.push(path.resolve(__dirname, "../../../data/lexicon/db.sqlite"));
+      candidatePaths.push(path.resolve(__dirname, "../../../../data/lexicon/db.sqlite"));
     }
 
     let resolvedPath: string | null = null;
     for (const p of candidatePaths) {
       if (fs.existsSync(p)) {
-        resolvedPath = p;
-        break;
+        try {
+          const stats = fs.statSync(p);
+          if (stats.size > 10000000) {
+            resolvedPath = p;
+            break;
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // Auto-assemble from chunked corpus if sqlite missing (e.g. Vercel serverless)
+    if (!resolvedPath) {
+      const chunkDirs = [
+        path.join(process.cwd(), "data", "lexicon", "chunks"),
+        path.join(process.cwd(), "gutenlib", "data", "lexicon", "chunks"),
+      ];
+      if (typeof __dirname !== "undefined") {
+        let cur = __dirname;
+        for (let i = 0; i < 6; i++) {
+          chunkDirs.push(path.join(cur, "data", "lexicon", "chunks"));
+          const parent = path.dirname(cur);
+          if (parent === cur) break;
+          cur = parent;
+        }
+      }
+
+      for (const dir of chunkDirs) {
+        try {
+          if (fs.existsSync(dir)) {
+            const parts = fs.readdirSync(dir).filter((f) => f.startsWith("lexicon.part")).sort();
+            if (parts.length > 0) {
+              const targetSqlite = path.join(os.tmpdir(), "classical_books.sqlite");
+              let needsDecompress = true;
+              if (fs.existsSync(targetSqlite)) {
+                try {
+                  const s = fs.statSync(targetSqlite);
+                  if (s.size > 10000000) {
+                    needsDecompress = false;
+                  }
+                } catch {
+                  needsDecompress = true;
+                }
+              }
+
+              if (needsDecompress) {
+                const buffers = parts.map((p) => fs.readFileSync(path.join(dir, p)));
+                const gzBuf = Buffer.concat(buffers);
+                const decompressed = zlib.gunzipSync(gzBuf);
+                fs.writeFileSync(targetSqlite, decompressed);
+              }
+
+              if (fs.existsSync(targetSqlite) && fs.statSync(targetSqlite).size > 10000000) {
+                resolvedPath = targetSqlite;
+                break;
+              }
+            }
+          }
+        } catch (chunkErr) {
+          console.warn("RealBookLexicon chunk assembly warning:", chunkErr);
+        }
       }
     }
 
@@ -138,10 +203,22 @@ function getDatabase(): SqliteDatabase | null {
       return null;
     }
 
-    // Load node:sqlite safely without Turbopack/Webpack bundle hijacking
+    // Load node:sqlite safely across all environments (ESM, CJS, Turbopack, Webpack, Node 22/24)
     let sqliteModule: any = null;
     if (typeof process !== "undefined" && typeof (process as any).getBuiltinModule === "function") {
-      sqliteModule = (process as any).getBuiltinModule("node:sqlite");
+      try {
+        sqliteModule = (process as any).getBuiltinModule("node:sqlite");
+      } catch {
+        // ignore
+      }
+    }
+    if (!sqliteModule) {
+      try {
+        const req = createRequire(import.meta.url);
+        sqliteModule = req("node:sqlite");
+      } catch {
+        // fallback
+      }
     }
     if (!sqliteModule) {
       try {

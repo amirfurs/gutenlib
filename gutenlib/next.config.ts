@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./data/lexicon/chunks/**/*"],
+    "/ar/lexicon": ["./data/lexicon/chunks/**/*"],
+    "/lexicon": ["./data/lexicon/chunks/**/*"],
+    "/voice": ["./data/lexicon/chunks/**/*"],
+    "/room/**/*": ["./data/lexicon/chunks/**/*"],
+  },
   async headers() {
     return [
       {
